@@ -1,0 +1,105 @@
+Notes.
+	//currently working on:
+		//xhr login & logout - reloading?
+		//textbox at side for taking random notes? Research bar? Spelling&pronunciation tools?
+		//Admin [and team-captain] backend: changing assignments, looking through marked-as-bad questions (reversing credit for it), etc...?
+		//Multiple-choice thingermabob
+		//Download-options xhr: Make sure to make download date dynamic.
+			//Date, team, format: ensure it's actually a full round
+		//QSets
+
+	//How well is it going to work once it's uploaded? Just import dbs and that's it?
+	//provide easy copy-paste option for people who've stocked up already [and ability to upload *.doc(x) for old qs]
+	//automatic email reminders? I think 000webhost can do that
+	//Question-access menu
+	//xhr download?
+	//Main page with question-submit sub-page?
+	//Cookies are rather easily forged, messing up the whole auth system. What are those login tokens anyway?
+	//1366747200 is next Tues, for reference.
+	//Are things being escaped too much? JS, PHP, SQL...
+	//Streamline code, interface
+	//Bug rept/comment page
+	//Put in lots of comment documentation!
+	//NEVER delete assignments! Then might not be able to access the questions they correspond to.=>fix this, due to nature of getTimestamps()
+	//Upload and convert old rounds
+	//Take regular backups of database...? To files? Export automatically?
+	//Unescape once escaped
+	//easy mc input
+	//Given majors, GENERATE assignments on command of captain
+	//Permissions - 0=admin, 1=teamcapt, 2=teammember
+	//Client-side validation...
+	//Login - on enter-key press - wrapping in <form> does it automatically
+	//NEVER lose questions! autosave&backup in cookie, server, make sure confirm before close/logout/leave page, etc.
+		//error handling=check with JS then if error on server side once submitted, echo the question and say there's an error.
+	//What if want to do extra???=>submit as (without-TimestampDue-but-with-TimestampSubd) buffer to be selected from later as needed! [at the time of creation of a new duedate]
+		//incentive program - extra points for extra questions, compiles into extra rounds
+	//Editing questions?
+	//SessionVer: will it work if I have a hashed something+name as key?
+	//$_SESSION?
+	//Store what's actually displayed on-site, i.e. "BIOLOGY "
+	//Server: SHUFFLES the questions!!!! Can do lots of things. Generate rounds! (if there are enough... just stick with fixed-date rounds for now) (also - reading rounds, exclude (given) team's questions)
+	//now, to display multiple questions on qsub page... can use question-wrapper.getElementById
+	//keep logs?
+	//Question-search page?
+	//Homepage, etc.
+	//Assignments...? Old code:
+		//DECREMENT the required assignment.
+		//$querydec="UPDATE assignments SET ".$qstuff[1]." = ".$qstuff[1]."-1";
+		//$querydec.=" WHERE Name = \"".$qstuff[0]."\"";
+		//$querydec.=" AND TimestampDue = ".$qstuff[8];//Wherever it's the right name and date (hopefully unique...) then decrement the subject requirement.
+		//$con->query($querydec);
+	//Filtering duplicate questions - if everything but id match up, delete all but one.
+	/*if($_GET["page403"]){
+		header('HTTP/1.0 403 Forbidden');
+		die("<h1>403 Forbidden</h1><img src=\"resources/grumpycat.jpg\" alt=\"grumpycat no\"/>");
+	}
+	elseif($_GET["page404"]){
+		header('HTTP/1.0 404 Not Found');
+		die("<h1>404 Not Found</h1><img src=\"resources/grumpycat.jpg\" alt=\"grumpycat no\"/>");
+	}*/
+	
+	
+	/*
+	public function insert($table,$valarr){
+		$query="INSERT INTO ".$this->prep($table,0);
+		
+		$query.=" (";
+		foreach($valarr as $item=>$val)
+			$query.=$this->prep($item,0).",";
+		$query=rtrim($query,",").")";
+		
+		$query.=" VALUES (";
+		foreach($valarr as $val)
+			$query.=$this->prep($val).",";
+		$query=rtrim($query,",").")";
+		if($this->con->query($query)===false)throw "DB: insert failed";
+		return true;
+	}
+	public function select($cols,$table,$wherecond=NULL){
+		$query="SELECT ".$this->prep($cols,0)." FROM ".$this->prep($table,0);
+		if(!is_null($wherecond))$query.=" WHERE ".$wherecond;//trusting...
+		
+		if(($qresult=$this->con->query($query))===false)throw new Exception("DB: select failed");
+		return $qresult;
+	}
+	private function prep($str,$isName=NULL){
+		//if has second param, will enclose ``, else if $str is int, no enclose, else enclose ""
+		if(is_null($isValue)){
+			if(is_numeric($str))return $this->con->real_escape_string(strval($str));break;//int; no quotes
+			return "\"".$this->con->real_escape_string($str)."\"";break;//string; enclose ""
+		}
+		else{
+			return "`".str_replace("`","\`",$this->con->real_escape_string($str))"`";break;//table name, enclose ``
+		}
+	}*/
+	
+	//db-based content system - cols id, name, html, includes
+	//Server side includes vulnerabilities?
+	//Nice math formatting (convert a^b to a<sup>b</sup>)
+	//autosave
+	//plaintext passwords make me sad
+	//use trim() and stuff
+	//Consistency of quotes ' "
+	//actually check if valid table and column in INFORMATION_SCHEMA?
+	
+	//Keep notebook...?

@@ -1,0 +1,2 @@
+ErrorDocument 404 index.php?page404=true
+ErrorDocument 403 index.php?page403=true

@@ -1,0 +1,149 @@
+body{
+overflow-y:scroll;
+}
+#content-wrapper,#header-wrapper,#footer-wrapper{
+margin-left:auto;margin-right:auto;
+border:solid 1px #000000;
+border-radius:4px;
+padding:10px;
+font-family:Arial,sans-serif;
+margin-bottom:15px;
+}
+#content-wrapper{
+min-height:200px;
+width:55%;
+}
+#header-wrapper{width:95%;margin-top:10px;}
+#footer-wrapper{
+text-align:center;
+background-color:#000000;
+color:#FFFFFF;
+font-size:0.7em;
+padding:0px;
+width:55%;
+}
+#directentry textarea{/*textarea for input*/
+width:100%;
+display:block;
+height:5em;
+}
+#directentry legend{font-weight:bold;text-align:center;}/*Title, TOSS-UP or BONUS.*/
+#directentry>fieldset>div{display:none;}
+body{text-align:center;}
+body *{text-align:left;}
+#bugreport{
+font-family:Arial;
+padding:10px;
+position:fixed;
+top:100px;
+right:2.5%;
+width:218px;
+border:solid 3px #000000;
+border-radius:10px;
+}
+#bugreport textarea{
+height:50px;
+}
+#navbar{
+list-style-type:none;
+padding:0;
+display:inline;
+}
+#navbar li{
+display:inline;
+float:left;
+}
+#navbar li a{
+display:inline-block;
+text-align:center;
+border:solid 1px #000000;
+padding:3px;
+text-decoration:none;
+font-size:0.8em;
+color:#000000;
+width:150px;
+margin:2px;
+border-radius:3px;
+}
+#navbar li a:hover{
+background-color:#999999;
+}
+#navbar li a:active{
+background-color:#CCCCCC;
+}
+
+#logged-in-as{
+border:solid 1px #000000;
+border-radius:3px;
+background-color:#000000;
+color:#FFFFFF;
+font-weight:bold;
+font-size:0.8em;
+padding:3px;
+}
+#logged-in-as a{
+color:#FF0000;
+}
+
+#question-input-options{
+list-style-type:none;
+padding:0;
+margin:0;
+}
+#question-input-options li{
+border:solid 1px #000000;
+padding:8px 30px;
+}
+#question-input-options li:hover{
+background-color:#CCCCCC;
+cursor:hand;
+}
+
+#question{
+border:solid 1px #000000;
+padding:30px;
+padding-top:20px;
+}
+
+.hiddenanswer a{
+font-size: 0.7em;
+}
+.hiddenanswer span{
+font-weight:bold;
+}
+#question-wrapper fieldset{border:solid 1px #666666;padding:10px;}/*--todo--too grayscale theme*/
+#question-input-menu{
+margin:0;
+padding:0;
+list-style-type:none;
+}
+#question-input-menu li{
+display:inline-block;
+width:200px;
+border:solid 1px #000000;
+border-bottom:none;
+color:#000000;
+background-color:#FFFFFF;
+text-align:center;
+border-top-left-radius:5px;
+border-top-right-radius:5px;
+}
+#question-input-menu li:hover{
+color:#FFFFFF;
+background-color:#000000;
+cursor:pointer;
+}
+#question-wrapper form{
+display:none;
+border:solid 1px #000000;
+padding:10px;
+border-radius:5px;
+border-top-left-radius:0px;
+}
+#question-input-menu li.currentinput{
+color:#FFFFFF;
+background-color:#000000;
+}
+#question-wrapper form.currentinput{
+display:block;
+}
