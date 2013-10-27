@@ -168,10 +168,23 @@ function fileToStr($file){
 	}
 }
 
-function qregex($type){
-	return '/['.$type.']+\s*([0-9]+\))?\s*(ENERGY|BIO(LOGY)?|CHEM(ISTRY)?|PHYS(|ICS|ICAL SCIENCE)|MATH(EMATICS)?|E(SS|ARTHSCI|ARTH SCIENCE|ARTH AND SPACE SCIENCE))\s*(Multiple Choice\s*((?:(?!W[\.\)\- ])[\s\S])*)\s*W[\.\)\- ]((?:(?!X[\.\)\- ])[\s\S])*)\s*X[\.\)\- ]((?:(?!Y[\.\)\- ])[\s\S])*)\s*Y[\.\)\- ](((?:(?!Z[\.\)\- ])[\s\S])*))\s*Z[\.\)\- ]((?:(?!ANSWER)[\s\S])*)|Short Answer\s*(((?:(?!ANSWER)[\s\S])*)(\s*[IV0-9]+((?:(?!ANSWER)[\s\S])*))*))\s*ANSWER:*\s*([^\r\n]+)';
+
+
+
+function qregex($wantBonus){
+	$subjChoices='(?<Subject>ENERGY|BIO(?:LOGY)?|CHEM(?:ISTRY)?|PHYS(?:|ICS|ICAL SCIENCE)|MATH(?:EMATICS)?|E(?:SS|ARTHSCI|ARTH SCIENCE|ARTH AND SPACE SCIENCE))';
+	$e='[\.\)\- ]';
+	
+	$choiceArr=["W","X","Y","Z","ANSWER"];
+	$mcChoices='';
+	for($i=0;$i<4;$i++)$mcChoices.=$choiceArr[$i].$e.'(?<Choices'.$choiceArr[$i].'>(?:(?!'.$choiceArr[$i+1].$e.')[\s\S])*)\s*';
+	return '/(?<Part>[TOSS-UP]+|[BONUS]+)\s*(?:(?<Number>[0-9]+)[\.\)\- ])?\s*'.$subjChoices.'\s*(?:Multiple Choice\s*((?:(?!W'.$e.')[\s\S])*)\s*'.$mcChoices.'|Short Answer\s*((?:(?:(?!ANSWER)[\s\S])*)(?:\s*[IVX0-9]+'.$e.'(?:(?:(?!ANSWER)[\s\S])*))*))\s*ANSWER:*\s*([^\r\n]+)';
 }
 ////--todo--////MAJOR REWORKING: Just changed Qs to be only ONE of TU, B.////--todo--////
+
+function qArrCmp($a, $b){
+	
+}
 
 //strToQs - high-level question-parsing; accepts string of questions to parse, does whatever with them, and returns string of output.
 function strToQs($qstr){
@@ -179,7 +192,7 @@ function strToQs($qstr){
 	if($qstr!==NULL){
 		preg_match_all(qregex("TOSS-UP"), $qstr, $qt1);
 		preg_match_all(qregex("BONUS"), $qstr, $qt2);
-		$questiontexts=array_merge($qt1,$qt2);
+		$questiontexts=usort(array_merge($qt1,$qt2),"qArrCmp");
 		
 		$lastOne=0;
 		$bad=array();
@@ -192,13 +205,13 @@ function strToQs($qstr){
 			for($j=$lastOne+1;$j<$next;$j++)$unparseable[]=$j;
 			$lastOne=$next;
 			try{
-				//Indices: full match, (1 number, 2 subject, [5 extras], 8 full text plus type, 9 MC qtext, 10 W, 11 X, 12 Y, 13 Z, 14 SA qtext, 15 last I/II/III/IV choice, 16 answer)*2
+				//Indices: full match, 1 number, 2 subject, 3 MC qtext, 4 W, 5 X, 6 Y, 7 Z, 8 SA qtext, 9 last I/II/III/IV choice, 10 answer
 				$q=new Question(["Subject"=>strpos('bcpme',strtolower(substr($questiontexts[2][$i],0,1))),
-					"QisMC"=>$questiontexts[9][$i]!="",$questiontexts[9+16][$i]!="",
-					"Question"=>[$questiontexts[9][$i].$questiontexts[14][$i],$questiontexts[9+16][$i].$questiontexts[14+16][$i]],
-					"Answer"=>[$questiontexts[16][$i],$questiontexts[16+16][$i]],
-					"MCChoices"=>[[$questiontexts[10][$i],$questiontexts[11][$i],$questiontexts[12][$i],$questiontexts[13][$i]],[$questiontexts[10+16][$i],$questiontexts[11+16][$i],$questiontexts[12+16][$i],$questiontexts[13+16][$i]]],
-					"MCa"=>[strpos('WXYZ',strtoupper(substr(trim($questiontexts[16][$i]),0,1))),strpos('WXYZ',strtoupper(substr(trim($questiontexts[16+16][$i]),0,1)))],
+					"QisMC"=>$questiontexts[9][$i]!="",
+					"Question"=>$questiontexts[9][$i].$questiontexts[14][$i],
+					"Answer"=>$questiontexts[16][$i],
+					"MCChoices"=>[$questiontexts[10][$i],$questiontexts[11][$i],$questiontexts[12][$i],$questiontexts[13][$i]],
+					"MCa"=>strpos('WXYZ',strtoupper(substr(trim($questiontexts[16][$i]),0,1))),
 					]);
 				$QIDArr[]=$q->getQID();
 			}
