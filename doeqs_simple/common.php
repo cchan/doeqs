@@ -4,7 +4,7 @@
 //function posted($postvarname1,$postvarname2,...) //Returns whether all of those are existent $_POST variables. (ie $_POST[$postvarname1],...)
 //function getted($getvarname1,$getvarname2,...) //Returns whether all of those are existent $_GET variables. (ie $_GET[$getvarname1],...)
 
-define("DEBUG_MODE",false);//True if want lots of output. False on real production.
+define("DEBUG_MODE",true);//True if want lots of output. False on real production.
 
 date_default_timezone_set("America/Toronto");//No Boston :( I'd rather use Toronto than NY though :)
 

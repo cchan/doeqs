@@ -21,10 +21,10 @@ define("DB_COL_REGEX","/^[A-Z\_]+$/i");
 
 //MUST DEFINE CONSTANT DB_DB. --todo-- what is the function checking whether defined? see below, using is_null which is wrong
 
-function isDestructiveQuery($q){//No DROPs and TRUNCATEs, no DELETEs without LIMIT
-	return(stripos($q,"DROP")!==false)
-		||(stripos($q,"TRUNCATE")!==false)
-		||((stripos($q,"DELETE")!==false)&&!stripos($q,"LIMIT")===false);
+function isDestructiveQuery($q){//No DROPs and TRUNCATEs, no DELETEs - just use Deleted flag!
+	return(stripos($q,"DROP")!==false
+		||stripos($q,"TRUNCATE")!==false
+		||stripos($q,"DELETE ")!==false);
 }
 
 class DB{
@@ -40,29 +40,30 @@ class DB{
 		$this->con->close();
 		unset($this->con);
 	}
-	public function query_assoc($template/*, $replace1, $replace2, ..., $replaceN*/){//Is it safe if you use real_escape_string?
+	public function sanitize($in){
+		//HTMLENTITIES TROUBLESHOOTING
+		if($args[$i]===true)$args[$i]="1";elseif($args[$i]===false)$args[$i]="0";//Explicit typecasting.
+		//Dealing with weird characters
+		$search = array(chr(145), //dumb single quotes
+							chr(146), //dumb single quotes
+							chr(147), //dumb double quotes
+							chr(148), //dumb double quotes
+							chr(151)); //em dash
+		$replace = array("'", 
+							 "'", 
+							 '"', 
+							 '"', 
+							 '-');
+		
+		
+		$escaped=$this->con->real_escape_string(htmlentities(str_replace($search, $replace, $in)));
+		if($escaped=="")die("HTMLENTITIES empty for string: ".var_export($args[$i],true));
+		return $escaped;
+	}
+	public function query($template,$replaceArr){//Is it safe if you use real_escape_string?
 		$args=func_get_args();
 		for($i=1;$i<func_num_args();$i++){//Replace all the %% var things
-			//HTMLENTITIES TROUBLESHOOTING
-			if($args[$i]===true)$args[$i]="1";elseif($args[$i]===false)$args[$i]="0";//Explicit typecasting.
-			
-			//Dealing with weird characters
-			$search = array(chr(145), //dumb single quotes
-								chr(146), //dumb single quotes
-								chr(147), //dumb double quotes
-								chr(148), //dumb double quotes
-								chr(151)); //em dash
-			$replace = array("'", 
-								 "'", 
-								 '"', 
-								 '"', 
-								 '-'); 
-			$args[$i]=str_replace($search, $replace, $args[$i]);
-			
-			$escaped=$this->con->real_escape_string(htmlentities($args[$i]));
-			if($escaped=="")die("HTMLENTITIES empty for string: ".var_export($args[$i],true));
-			
-			$template=str_replace("%$i%",$this->con->real_escape_string(htmlentities($args[$i])),$template);
+			$template=str_replace("%$i%",$this->sanitize($args[$i]),$template);
 		}
 		if(isDestructiveQuery($template))throw new Exception("DB: GRUMPYCAT NO - destructive query");
 		
@@ -73,8 +74,11 @@ class DB{
 		if(($qresult=$this->con->query($template))===false)throw new Exception("DB: query failed: $template");
 		$this->insert_id=$this->con->insert_id;
 		
+		return $qresult;
+	}
+	public function query_assoc($template,$replaceArr){
+		$qresult=$this->query($template,$replaceArr);
 		if($qresult===true)return true;//not a data-gathering query
-		
 		return $qresult->fetch_assoc();
 	}
 };
@@ -86,7 +90,7 @@ function elemInSQLReq($elem,$col,$table){//Checks whether a specified element is
 	if(preg_match(DB_COL_REGEX,$col)===0)throw new Exception("eleminsqlreq: invalid col");
 	if(preg_match(DB_TABLE_REGEX,$table)===0)throw new Exception("eleminsqlreq: invalid table");
 	
-	return count($database->query_assoc("SELECT sum(case when %2%=\"%3%\" then 1 else 0 end) AS count FROM %1%",$table,$col,$elem))>0;
+	return count($database->query_assoc("SELECT sum(case when %2%=\"%3%\" then 1 else 0 end) AS count FROM %1%",[$table,$col,$elem]))>0;
 	//Select all from $table where value of $col is $elem. //If there's one or more rows, it is in the column.
 }
 /*Permanently deprecated. Vestigial code for reference. Do NOT restore.

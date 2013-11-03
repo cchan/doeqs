@@ -177,13 +177,16 @@ function fileToStr($file){
 
 
 function qregex(){
-	$subjChoices='(?<Subject>ENERGY|BIO(?:LOGY)?|CHEM(?:ISTRY)?|PHYS(?:|ICS|ICAL SCIENCE)|MATH(?:EMATICS)?|E(?:SS|ARTHSCI|ARTH SCIENCE|ARTH AND SPACE SCIENCE))';
-	$e='[\.\)\- ]';
+//dafuq [in regexpal] it works fine except doesn't match mc questions where there's "how" or "law" in the question, or where there's "only" in X
+//also, mislabeled MC as SA passes in no-linebreaks mode
+	$subjChoices='(ENERGY|BIO(?:LOGY)?|CHEM(?:ISTRY)?|PHYS(?:|ICS|ICAL SCIENCE)|MATH(?:EMATICS)?|E(?:SS|ARTHSCI|ARTH SCIENCE|ARTH AND SPACE SCIENCE))';
+	$e='[\:\.\)\- ]';//W. or W) or W- or W: or W .
+	$a='[\:\.\)\-]';//W. or W) or W- or W:.
 	
-	$choiceArr=["W","X","Y","Z","ANSWER"];
 	$mcChoices='';
-	for($i=0;$i<4;$i++)$mcChoices.=$choiceArr[$i].$e.'(?<Choices'.$choiceArr[$i].'>(?:(?!'.$choiceArr[$i+1].$e.')[\s\S])*)\s*';
-	return '/(?<Part>TOSS\-?UP|BONUS)\s*(?:(?<Number>[0-9]+)[\.\)\- ])?\s*'.$subjChoices.'\s*(?:Multiple Choice\s*(?<MCQText>(?:(?!W'.$e.')[\s\S])*)\s*'.$mcChoices.'|Short Answer\s*(?<SAQText>(?:(?:(?!ANSWER)[\s\S])*)(?:\s*[IVX0-9]+'.$e.'(?:(?!ANSWER)(?![IVX0-9]+'.$e.')[\s\S])*)*))\s*ANSWER:*\s*(?<Answer>(?:(?!TOSS\-?UP)(?!BONUS)[\s\S])*)';
+	$choiceArr=["W","X","Y","Z","ANSWER"];
+	for($i=0;$i<4;$i++)$mcChoices.=$choiceArr[$i].$e.'((?:(?!'.$choiceArr[$i+1].$e.')[^\n\r])*)\s*';
+	return '/(TOSS\-?UP|BONUS)\s*(?:([0-9]+)[\.\)\- ])?\s*'.$subjChoices.'\s*(?:Multiple Choice\s*((?:(?!W'.$e.')[^\n\r])*)\s*'.$mcChoices.'|Short Answer\s*((?:(?:(?!ANSWER'.$a.')[^\n\r])*)(?:\s*[IVX0-9]+'.$e.'(?:(?!ANSWER'.$a.')(?![IVX0-9]+'.$e.')[^\n\r])*)*))\s*ANSWER'.$a.'*\s*((?:(?!TOSS\-?UP)(?!BONUS)[^\n\r])*)/i';
 }
 
 //strToQs - high-level question-parsing; accepts string of questions to parse, does whatever with them, and returns string of output.
@@ -191,6 +194,10 @@ function strToQs($qstr){
 	$out="";
 	if($qstr!==NULL){
 		$nMatches=preg_match_all(qregex(), $qstr, $qtext);
+		//$qstr=str_replace(array("\r", "\n"), "" ,$qstr);//Normalizing and trying again? [then it will catch the "DOE TEAM QUESTIONS" thing
+		//die(var_dump($qtext)."<textarea rows=100 cols=100>".preg_replace(qregex(),"",$qstr)."</textarea>");
+		
+		echo "<textarea>";var_dump($qtext);echo "</textarea>";
 		
 		$lastOne=0;
 		$bad=array();
@@ -198,20 +205,21 @@ function strToQs($qstr){
 		$duplicates=array();
 		$parsedQIDs=array();
 		for($i=0;$i<$nMatches;$i++){
-			$next=intval($qtext["Number"][$i]);
+			$next=intval($qtext[1][$i]);
 			if($lastOne>$next){$bad[]=$lastOne;continue;}
 			for($j=$lastOne+1;$j<$next;$j++)$unparseable[]=$j;
 			$lastOne=$next;
 			
 			try{
-				//Indices: 0 full match, Number, Subject, MCQText, ChoicesW, ChoicesX, ChoicesY, ChoicesZ, SAQText, Answer
-				$q=new Question(["isTU"=>strpos('bt',strtolower(substr($qtext["Part"][$i],0,1))),
-					"Subject"=>strpos('bcpme',strtolower(substr($qtext["Subject"][$i],0,1))),
-					"isMC"=>$qtext["MCQText"][$i]!="",
-					"Question"=>$qtext["MCQText"][$i].$qtext["SAQText"][$i],
-					"Answer"=>$qtext[16][$i],
-					"MCChoices"=>[$qtext["ChoicesW"][$i],$qtext["ChoicesX"][$i],$qtext["ChoicesY"][$i],$qtext["ChoicesZ"][$i]],
-					"MCa"=>strpos('wxyz',strtolower(substr(trim($qtext["Answer"][$i]),0,1))),
+				//Indices: 0 full match, Part, Number, Subject, MCQText, ChoicesW, ChoicesX, ChoicesY, ChoicesZ, SAQText, Answer
+				$q=new Question([
+					"isTU"=>strpos('bt',strtolower(substr($qtext[1][$i],0,1))),
+					"Subject"=>strpos('bcpme',strtolower(substr($qtext[3][$i],0,1))),
+					"isMC"=>$qtext[4][$i]!="",
+					"Question"=>$qtext[4][$i].$qtext[9][$i],
+					"MCChoices"=>[$qtext[5][$i],$qtext[6][$i],$qtext[7][$i],$qtext[8][$i]],
+					"Answer"=>$qtext[10][$i],
+					"MCa"=>strpos('wxyz',strtolower(substr(trim($qtext[10][$i]),0,1))),
 					]);
 				$parsedQIDs[]=$q->getQID();
 			}
@@ -225,7 +233,7 @@ function strToQs($qstr){
 		if(count($bad)>0)$out.= "[Badly numbered near #s ".arrayToRanges($bad)." (".count($bad)." of them)] ";
 		if(count($unparseable)>0)$out.= "[Unparseable/missing #s ".arrayToRanges($unparseable)." (".count($unparseable)." of them)] ";
 		if(count($bad)==0&&count($unparseable)==0)$out.= "No errors found.";
-		$out.= "<br><span style='font-size:0.7em;'>(Common syntax errors include multi-line question statement, improperly labeled (as MC or SA), missing some necessary components (like multiple choices and an answer), really horrible misspellings.)</span>";
+		$out.= "<br><span style='font-size:0.7em;'>(Common syntax errors include multi-line question statement, improperly labeled (as MC or SA), missing some necessary components (like multiple choices and an answer), multi-line things that shouldn't be multi-line, mislabeled multiple choice, really horrible misspellings.)</span>";
 		$out.= "<br><br>Duplicate question #s: ".((count($duplicates)==0)?"none":arrayToRanges($duplicates)." (".count($duplicates)." of them)")."";
 		$out.= "<br><br><b>Total uploaded Question-IDs: ".((count($parsedQIDs)==0)?"no questions entered":arrayToRanges($parsedQIDs)." (".count($parsedQIDs)." total entered)")."</b>";
 	}

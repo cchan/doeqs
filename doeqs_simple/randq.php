@@ -18,7 +18,7 @@ if(posted("rate","rateid","ver")&&isset($_SESSION["ver"])&&$_POST["ver"]===$_SES
 <div id='question'>
 <?php
 $Question=new Question(0);
-echo $Question->toHTML(false);
+echo $Question->toHTML(0),$Question->toHTML(1);
 ?>
 </div>
 <form action="randq.php" method="POST">

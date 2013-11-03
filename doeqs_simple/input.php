@@ -13,8 +13,7 @@ if(isSet($_POST["ver"])&&isSet($_SESSION["ver"])&&$_POST["ver"]==$_SESSION["ver"
 	if(isSet($_POST["copypaste"])||isSet($_FILES["file"])||isSet($_POST["directentry"])){
 		echo '<div style="font-size:0.8em;border:solid 1px #000000;display:inline-block;padding:5px;">
 			<i>We are processing your questions right now...</i><br><br>';
-		if(isSet($_POST["copypaste"]))
-			echo strToQs($_POST["copypaste"]);
+		if(isSet($_POST["copypaste"]))echo strToQs($_POST["copypaste"]);
 		elseif(isSet($_FILES["file"]))
 			echo strToQs(fileToStr($_FILES["file"]));
 		elseif(isSet($_POST["directentry"])){
@@ -51,7 +50,7 @@ Enter some questions:
 	<h2>Copy-Paste</h2>
 	<form id="copypaste" action="input.php" method="POST" autocomplete="off">
 		Paste it all here:<br>
-		<textarea name="copypaste" style="width:100%;height:10em;"></textarea><br>
+		<textarea name="copypaste" style="width:100%;height:10em;"><?php echo file_get_contents("testdata/sampleQText.txt");?></textarea><br>
 		<input type="hidden" name="ver" value="<?php echo $_SESSION["ver"];?>"/>
 		<input type="submit" value="Submit Question(s)"/>
 	</form>
