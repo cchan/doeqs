@@ -194,8 +194,8 @@ function strToQs($qstr){
 	$out="";
 	if($qstr!==NULL){
 		$nMatches=preg_match_all(qregex(), $qstr, $qtext);
-		//$qstr=str_replace(array("\r", "\n"), "" ,$qstr);//Normalizing and trying again? [then it will catch the "DOE TEAM QUESTIONS" thing
-		//die(var_dump($qtext)."<textarea rows=100 cols=100>".preg_replace(qregex(),"",$qstr)."</textarea>");
+		$qstr=str_replace(array("\r", "\n"), "" ,$qstr);//Normalizing and trying again? [then it will catch the "DOE TEAM QUESTIONS" thing
+		echo("Unparsed text: <textarea rows=100 cols=10>".preg_replace(qregex(),"",$qstr)."</textarea>");
 		
 		echo "<textarea>";var_dump($qtext);echo "</textarea>";
 		
@@ -203,7 +203,7 @@ function strToQs($qstr){
 		$bad=array();
 		$unparseable=array();
 		$duplicates=array();
-		$parsedQIDs=array();
+		$qs=new Questions();
 		for($i=0;$i<$nMatches;$i++){
 			$next=intval($qtext[1][$i]);
 			if($lastOne>$next){$bad[]=$lastOne;continue;}
@@ -212,7 +212,7 @@ function strToQs($qstr){
 			
 			try{
 				//Indices: 0 full match, Part, Number, Subject, MCQText, ChoicesW, ChoicesX, ChoicesY, ChoicesZ, SAQText, Answer
-				$q=new Question([
+				$qs->add([[
 					"isTU"=>strpos('bt',strtolower(substr($qtext[1][$i],0,1))),
 					"Subject"=>strpos('bcpme',strtolower(substr($qtext[3][$i],0,1))),
 					"isMC"=>$qtext[4][$i]!="",
@@ -220,21 +220,22 @@ function strToQs($qstr){
 					"MCChoices"=>[$qtext[5][$i],$qtext[6][$i],$qtext[7][$i],$qtext[8][$i]],
 					"Answer"=>$qtext[10][$i],
 					"MCa"=>strpos('wxyz',strtolower(substr(trim($qtext[10][$i]),0,1))),
-					]);
-				$parsedQIDs[]=$q->getQID();
+					]]);
 			}
 			catch(Exception $e){
 				if($e->getMessage()=="Duplicate")$duplicates[]=$next;
 				else $unparseable[]=$next;
 			}
 		}
+		$qs->commit();
+		$parsedQIDs=$qs->getQIDs();
 		
 		$out.= count($parsedQIDs)." questions successfully parsed.<br><br>Question parsing errors (using our extremely rough missing-question detection mechanism): ";
 		if(count($bad)>0)$out.= "[Badly numbered near #s ".arrayToRanges($bad)." (".count($bad)." of them)] ";
 		if(count($unparseable)>0)$out.= "[Unparseable/missing #s ".arrayToRanges($unparseable)." (".count($unparseable)." of them)] ";
 		if(count($bad)==0&&count($unparseable)==0)$out.= "No errors found.";
-		$out.= "<br><span style='font-size:0.7em;'>(Common syntax errors include multi-line question statement, improperly labeled (as MC or SA), missing some necessary components (like multiple choices and an answer), multi-line things that shouldn't be multi-line, mislabeled multiple choice, really horrible misspellings.)</span>";
-		$out.= "<br><br>Duplicate question #s: ".((count($duplicates)==0)?"none":arrayToRanges($duplicates)." (".count($duplicates)." of them)")."";
+		$out.= "<br><span style='font-size:0.8em;'>(Common syntax errors include multi-line question statement, improperly labeled (as MC or SA), missing some necessary components (like multiple choices and an answer), mislabeled multiple choice, really horrible misspellings.)</span>";
+		if(count($duplicates)>0)$out.= "<br><br>Duplicate question #s: ".arrayToRanges($duplicates)." (".count($duplicates)." of them)";
 		$out.= "<br><br><b>Total uploaded Question-IDs: ".((count($parsedQIDs)==0)?"no questions entered":arrayToRanges($parsedQIDs)." (".count($parsedQIDs)." total entered)")."</b>";
 	}
 	return $out;
@@ -256,7 +257,7 @@ function randomizeArr($arr){
 define("DEFAULT_QUESTION_TEXT","Your question here...");
 define("DEFAULT_ANSWER_TEXT","Your answer here...");
 
-$ruleSet=array(//--todo--store mc as 0,1,2,3 & other DB updates above [ruleSet obj?]
+$ruleSet=array(
 	"Subjects"=>array("BIOLOGY","CHEMISTRY","PHYSICS","MATHEMATICS","EARTH AND SPACE SCIENCE"),//'bcpme'
 	"QTypes"=>array("Short Answer","Multiple Choice"),
 	"QParts"=>array("TOSS-UP","BONUS"),
@@ -265,11 +266,12 @@ $ruleSet=array(//--todo--store mc as 0,1,2,3 & other DB updates above [ruleSet o
 
 class Questions{//Does all the validation... for you! By not trusting you at all. ;)
 	private $QID,$isTU,$Subject,$isMC,$Question,$MCChoices,$Answer,$Rating,$PairedWithID;
-	public function __construct($paramsArray){//Construct an array of questions, each from array or ID.
-		//--todo--if just return or die or whatever, timing attacks!
+	public function __construct(){
+		$this->QID=$this->isTU=$this->Subject=$this->isMC=$this->Question=$this->MCChoices
+			=$this->Answer=$this->Rating=$this->PairedWithID=array();
+		}
+	public function add($paramsArray){//Add to the array of questions, each from array or ID.
 		global $ruleSet;
-		global $database;
-		
 		
 		if(is_null($paramsArray)){//Huh. No parameters. -_-
 			throw new Exception("Q: No parameters");
@@ -297,7 +299,8 @@ class Questions{//Does all the validation... for you! By not trusting you at all
 		$queryadd="INSERT INTO questions (Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, PairedWithID) VALUES ";
 		$queryarr=array();
 		foreach($paramsArray as $n=>$params){
-			if(intval($params)==$params){
+			if($params==strval(intval($params))){
+				echo("<h1>DIES</h1>");
 				$RatingThreshold=-3;
 				if(elemInSQLReq($params,"QID","questions"))
 					$row=$database->query_assoc("SELECT QID, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating, PairedWithID FROM questions WHERE QID = \"%1%\" AND Deleted=FALSE LIMIT 1",[$params]);
@@ -316,7 +319,8 @@ class Questions{//Does all the validation... for you! By not trusting you at all
 				$this->PairedWithID[$n]=$row["PairedWithID"];
 			}
 			elseif(is_array($params)){//Then it's (probably) being given all the needed parameters in an array.
-				
+				$n+=count($this->QID);//"Temporary" fix. Ugly.
+			
 				$this->Subject[$n]=intval($params["Subject"]);
 				if($this->Subject[$n]===false||$this->Subject[$n]>4||$this->Subject[$n]<0)throw new Exception("Invalid subject");
 				
@@ -334,46 +338,52 @@ class Questions{//Does all the validation... for you! By not trusting you at all
 				//Deal with MC vs SA
 				if($this->isMC[$n]){
 					if(anyIndicesEmpty($this->MCChoices[$n],0,1,2,3))throw new Exception("Some multiple choice blank");
-					if(strpos('wxyz',strtolower(substr(trim($this->Answer[$n]),0,1)))===false)throw new Exception("Invalid multiple choice answer");
+					if($this->Answer=strpos('wxyz',strtolower(substr(trim($this->Answer[$n]),0,1)))===false)throw new Exception("Invalid answer");
 				}
 				else $this->Answer[$n]=$params["Answer"];
 				
-				//--todo-- wait it's not adding MCs and MCas.
-				
-				//Prepare the horrible %627346892379528394% replacement strings
-				$queryadd.=" (";for($k=1;$k<=10;$k++)$queryadd.="\"%".($n*10+$k)."%\",";$queryadd=substr($queryadd,0,-1)."), ";
-				
-				//--todo--disallow identical choices for mc
-				
-				//Push the new entries onto the query array
-				array_push($queryarr,$this->isTU[$n],
-					$this->Subject[$n],
-					$this->isMC[$n],$this->Question[$n],
-					$this->MCChoices[$n][0],$this->MCChoices[$n][1],$this->MCChoices[$n][2],$this->MCChoices[$n][3],
-					$this->Answer[$n],
-					$this->PairedWithID[$n]
-					);
-				
-				//Set new ID.--todo--????????????????????????????????
-				//$this->QID=$database->insert_id;
 				//Start value for rating.
 				$this->Rating=0;
+				
+				//Hm. Start value for QID.
+				$this->QID[$n]=0;
+				
+				
+				$n-=count($this->QID);
 			}
 			else{
 				throw new Exception("Q: Bad parameters");
 			}
-			if(count($queryarr)>0)$database->query_assoc(substr($queryadd,0,-2),$queryarr);
 		}
 		//http://stackoverflow.com/questions/18932/how-can-i-remove-duplicate-rows no idea what it does
-		$database->query_assoc("UPDATE questions SET Deleted=TRUE WHERE QID NOT IN (SELECT MIN(QID) FROM questions WHERE Deleted=FALSE GROUP BY Question)");
+		//$database->query_assoc("UPDATE questions SET Deleted=TRUE WHERE QID NOT IN (SELECT MIN(QID) FROM questions WHERE Deleted=FALSE GROUP BY Question)");
 	}
 	
-	public function addQs($param){//compartmentalize into individual methods for adding to this set, and then committing
-		//here
-	}
-	
-	public function commitDB(){
-		//here
+	public function commit(){
+		global $database;
+		$max_query_length=1000;//Estimated. Be safe.
+		$i=0;//which iteration we're on.
+		$q='INSERT INTO questions (isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, PairedWithID) VALUES ';
+		$valarr=[];
+		$lengthestimate=count($q);
+		foreach($this->isTU as $ind=>$val){
+			$lengthestimate+=count($this->Question[$ind])+count(implode($this->MCChoices[$ind]))+count($this->Answer[$ind])+20;
+			if(lengthestimate-1>$max_query_length){
+				$database->query_assoc(substr($q,0,-1),$valarr);
+				$i=0;
+				$q='INSERT INTO questions (isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, PairedWithID) VALUES ';
+				$lengthestimate=count($q);
+				$valarr=[];
+			}
+			
+			$textadd="(";for($x=10*$i;$x<10*$i+10;$x++)$textadd.="%$x%,";$textadd=substr($textadd,0,-1).")";
+			$valarr=array_push($valarr,$this->isTU[$ind],$this->Subject[$ind],$this->isMC[$ind],$this->Question[$ind],
+				$this->MCChoices[$ind][0],$this->MCChoices[$ind][1],$this->MCChoices[$ind][2],$this->MCChoices[$ind][3],
+				$this->Answer[$ind],$this->PairedWithID[$ind]);
+			$q.=$textadd.",";
+			$i++;
+		}
+		if(count($valarr)>0)$database->query_assoc(substr($q,0,-1),$valarr);//What QIDs?????????????????????????
 	}
 	
 	public function toHTML($i,$plainans=true){//Return nice HTML.
@@ -397,23 +407,24 @@ class Questions{//Does all the validation... for you! By not trusting you at all
 		return $ret;
 	}
 	
-	public function getQID(){return $this->QID;}
-	public function getSubj(){return $this->Subject;}
-	public function getRating(){return $this->Rating;}
+	public function getQIDs(){return $this->QID;}
+	public function getQID($i){return $this->QID[$i];}
+	public function getSubj($i){return $this->Subject[$i];}
+	public function getRating($i){return $this->Rating[$i];}
 	
-	public function rate($x){//Rate question.
+	public function rate($i,$x){//Rate question.
 		global $database;
-		static $rated=false;
-		if($rated)return;
+		static $rated=array();
+		if($rated[$i]===true)return;
 		if($x!=intval($x))return;
 		//Being super-careful.
 		
 		if(intval($x)>=-2||intval($x)<=2){
-			$database->query_assoc("UPDATE questions SET Rating=Rating+%2% WHERE QID=%1% LIMIT 1",[$this->QID,intval($x)]);
-			$this->Rating+=intval($x);
+			$this->Rating[$i]+=intval($x);
+			$database->query_assoc("UPDATE questions SET Rating=Rating+%2% WHERE QID=%1% LIMIT 1",[$this->QID[$i],intval($x)]);
 		}
 		
-		$rated=true;
+		$rated[$i]=true;
 	}
 };
 function getExportSize(){

@@ -17,12 +17,12 @@ if(posted("rate","rateid","ver")&&isset($_SESSION["ver"])&&$_POST["ver"]===$_SES
 <br>
 <div id='question'>
 <?php
-$Question=new Question(0);
-echo $Question->toHTML(0),$Question->toHTML(1);
+$Q=new Questions("randpair");
+echo $Q->allToHTML();
 ?>
 </div>
 <form action="randq.php" method="POST">
-<input type="hidden" name="rateid" value="<?php echo $Question->getQID();?>"/>
+<input type="hidden" name="rateid" value="<?php echo implode(", ",$Q->getQIDs());?>"/>
 <input type="hidden" name="ver" value="<?php $_SESSION["ver"]=generateRandomString(20);echo $_SESSION["ver"];?>"/>
 Rating:
 <input type="submit" name="rate" value="-2"/>

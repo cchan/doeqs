@@ -42,7 +42,7 @@ class DB{
 	}
 	public function sanitize($in){
 		//HTMLENTITIES TROUBLESHOOTING
-		if($args[$i]===true)$args[$i]="1";elseif($args[$i]===false)$args[$i]="0";//Explicit typecasting.
+		if($in===true)$in="1";elseif($in===false)$in="0";//Explicit typecasting.
 		//Dealing with weird characters
 		$search = array(chr(145), //dumb single quotes
 							chr(146), //dumb single quotes
@@ -55,15 +55,13 @@ class DB{
 							 '"', 
 							 '-');
 		
-		
 		$escaped=$this->con->real_escape_string(htmlentities(str_replace($search, $replace, $in)));
-		if($escaped=="")die("HTMLENTITIES empty for string: ".var_export($args[$i],true));
+		if($escaped=="")throw new Exception("HTMLENTITIES empty for string: ".var_export($in,true));
 		return $escaped;
 	}
 	public function query($template,$replaceArr){//Is it safe if you use real_escape_string?
-		$args=func_get_args();
-		for($i=1;$i<func_num_args();$i++){//Replace all the %% var things
-			$template=str_replace("%$i%",$this->sanitize($args[$i]),$template);
+		for($i=0;$i<count($replaceArr);$i++){//Replace all the %% var things
+			$template=str_replace("%$i%",$this->sanitize($replaceArr[$i]),$template);
 		}
 		if(isDestructiveQuery($template))throw new Exception("DB: GRUMPYCAT NO - destructive query");
 		
