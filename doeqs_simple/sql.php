@@ -41,6 +41,7 @@ class DB{
 		unset($this->con);
 	}
 	public function sanitize($in){
+		if($in===""||$in===NULL)return '""';
 		//HTMLENTITIES TROUBLESHOOTING
 		if($in===true)$in="1";elseif($in===false)$in="0";//Explicit typecasting.
 		//Dealing with weird characters
@@ -55,9 +56,11 @@ class DB{
 							 '"', 
 							 '-');
 		
+		//--todo-- just change the charset of htmlentities -_- e.g. weird és
+		
 		$escaped=$this->con->real_escape_string(htmlentities(str_replace($search, $replace, $in)));
-		if($escaped=="")throw new Exception("HTMLENTITIES empty for string: ".var_export($in,true));
-		return $escaped;
+		if($escaped=="")throw new Exception("HTMLENTITIES empty for string: ");
+		return '"'.$escaped.'"';
 	}
 	public function query($template,$replaceArr){//Is it safe if you use real_escape_string?
 		for($i=0;$i<count($replaceArr);$i++){//Replace all the %% var things

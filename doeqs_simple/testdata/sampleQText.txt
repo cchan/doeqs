@@ -710,7 +710,7 @@ TOSS-UP
 
 W. Lorentz force
 X. Jefimenko’s equations
-Y. Liénard-Wiecher equations
+Y. Lienard-Wiecher equations
 Z. Maxwell’s equations
 
 ANSWER:  X. Jefimenko’s equations
@@ -722,7 +722,7 @@ I) Gluon II) Dark Matter III) Leptons IV) Graviton
 ANSWER: I and III
 TOSS-UP
 
-54) MATH Short Answer There are 54 questions in this round. Given that there are 8 questions in math, earth sci, bio, chem, physics, and 4 energy questions, and that Bob did ¾ of the math and ¼ of everything else, what is the probability of selecting one of Bob’s questions?
+54) MATH Short Answer There are 54 questions in this round. Given that there are 8 questions in math, earth sci, bio, chem, physics, and 4 energy questions, and that Bob did 3/4 of the math and 1/4 of everything else, what is the probability of selecting one of Bob’s questions?
 
 ANSWER: 5/18
 BONUS

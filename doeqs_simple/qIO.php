@@ -156,7 +156,7 @@ function fileToStr($file){
 	$ext=substr($file['name'],strrpos($file['name'],'.')+1);
 	switch($ext){
 		case "txt": return file_get_contents($file['tmp_name']);
-		case "html": return strip_tags(file_get_contents($file['tmp_name']));//get rid of all html tags
+		case "html": case "htm": return strip_tags(file_get_contents($file['tmp_name']));//get rid of all html tags
 		case "doc"://Credit: Seriously abusing the demo of http://www.phpwordlib.motion-bg.com/ [--todo--note filesize limit]
 			$xmlstr=do_post_request("http://www.phpwordlib.motion-bg.com/phpwordlib.php", $file);
 			return substr($xmlstr,strpos($xmlstr,"<pre>")+5,strpos($xmlstr,"</pre>")-strpos($xmlstr,"<pre>")-5);
@@ -208,11 +208,14 @@ function strParseQs($qstr){
 				"MCa"=>strpos('wxyz',strtolower(substr(trim($qtext[10][$i]),0,1))),
 				]]);
 		}
-		catch(Exception $e){}
+		catch(Exception $e){
+			
+		}
 	}
 	$qs->commit();
 	$parsedQIDs=$qs->getQIDs();
 	
+	echo "Duplicates: none";
 	echo "<b>Total uploaded Question-IDs: ".((count($parsedQIDs)==0)?"no questions entered":arrayToRanges($parsedQIDs)." (".count($parsedQIDs)." total entered)")."</b>";
 	return preg_replace(qregex(),"",$qstr);//stuff remaining after questions detected
 }
@@ -274,7 +277,6 @@ class Questions{//Does all the validation... for you! By not trusting you at all
 		$queryarr=array();
 		foreach($paramsArray as $n=>$params){
 			if($params==strval(intval($params))){
-				echo("<h1>DIES</h1>");
 				$RatingThreshold=-3;
 				if(elemInSQLReq($params,"QID","questions"))
 					$row=$database->query_assoc("SELECT QID, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating FROM questions WHERE QID = \"%1%\" AND Deleted=FALSE LIMIT 1",[$params]);
@@ -293,6 +295,7 @@ class Questions{//Does all the validation... for you! By not trusting you at all
 			}
 			elseif(is_array($params)){//Then it's (probably) being given all the needed parameters in an array.
 				$n+=count($this->QID);//"Temporary" fix. Ugly.
+				$this->isTU[$n]=$params["isTU"]==1?1:0;
 			
 				$this->Subject[$n]=intval($params["Subject"]);
 				if($this->Subject[$n]===false||$this->Subject[$n]>4||$this->Subject[$n]<0)throw new Exception("Invalid subject");
@@ -329,7 +332,8 @@ class Questions{//Does all the validation... for you! By not trusting you at all
 			}
 		}
 		//http://stackoverflow.com/questions/18932/how-can-i-remove-duplicate-rows no idea what it does
-		//$database->query_assoc("UPDATE questions SET Deleted=TRUE WHERE QID NOT IN (SELECT MIN(QID) FROM questions WHERE Deleted=FALSE GROUP BY Question)");
+		$database->query_assoc("UPDATE questions SET Deleted=TRUE WHERE QID NOT IN (SELECT MIN(QID) FROM questions WHERE Deleted=FALSE GROUP BY Question)");
+		//--todo--so how to do this for our php copy of the questions?
 	}
 	
 	public function commit(){
@@ -337,24 +341,26 @@ class Questions{//Does all the validation... for you! By not trusting you at all
 		$max_query_length=1000;//Estimated. Be safe.
 		$i=0;//which iteration we're on.
 		$q='INSERT INTO questions (isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer) VALUES ';
-		$valarr=[];
+		$valarr=array();
 		$lengthestimate=count($q);
-		foreach($this->isTU as $ind=>$val){
+		foreach($this->QID as $ind=>$val){
 			$lengthestimate+=count($this->Question[$ind])+count(implode($this->MCChoices[$ind]))+count($this->Answer[$ind])+20;
-			if(lengthestimate-1>$max_query_length){
+			if($lengthestimate-1>$max_query_length){
 				$database->query_assoc(substr($q,0,-1),$valarr);
 				$i=0;
 				$q='INSERT INTO questions (isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer) VALUES ';
 				$lengthestimate=count($q);
-				$valarr=[];
+				$valarr=array();
 			}
 			
 			$how_many_entries=9;
 			$textadd="(";for($x=$how_many_entries*$i;$x<$how_many_entries*($i+1);$x++)$textadd.="%$x%,";$textadd=substr($textadd,0,-1).")";
-			$valarr=array_push($valarr,$this->isTU[$ind],$this->Subject[$ind],$this->isMC[$ind],$this->Question[$ind],
+			
+			array_push($valarr,$this->isTU[$ind],$this->Subject[$ind],$this->isMC[$ind],$this->Question[$ind],
 				$this->MCChoices[$ind][0],$this->MCChoices[$ind][1],$this->MCChoices[$ind][2],$this->MCChoices[$ind][3],
 				$this->Answer[$ind]);
 			$q.=$textadd.",";
+			$this->QID[$ind]=mt_rand();
 			$i++;
 		}
 		if(count($valarr)>0)$database->query_assoc(substr($q,0,-1),$valarr);//What QIDs?????????????????????????
