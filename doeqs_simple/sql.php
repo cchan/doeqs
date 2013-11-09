@@ -22,6 +22,7 @@ define("DB_COL_REGEX","/^[A-Z\_]+$/i");
 //MUST DEFINE CONSTANT DB_DB. --todo-- what is the function checking whether defined? see below, using is_null which is wrong
 
 function isDestructiveQuery($q){//No DROPs and TRUNCATEs, no DELETEs - just use Deleted flag!
+	return false;/////////////////......................
 	return(stripos($q,"DROP")!==false
 		||stripos($q,"TRUNCATE")!==false
 		||stripos($q,"DELETE ")!==false);
@@ -65,12 +66,8 @@ class DB{
 	}
 	public function query($template,$replaceArr=array()){//Is this safe??...
 		foreach($replaceArr as $ind=>$replace)//Replace all the %% var things
-			$template=str_replace("%$ind%",$this->sanitize($replace),$template);
+			$template=str_replace("%$ind%",$this->sanitize($replace),$template);//ZERO-INDEXED
 		if(isDestructiveQuery($template))throw new Exception("DB: GRUMPYCAT NO - destructive query");
-		
-		//static $asdf=1;
-		//echo ($asdf++)." ";//--todo-- it's displayed >47 times O_o how about some optimization?
-		//echo $template."<br>";
 		
 		if(($qresult=$this->con->query($template))===false)throw new Exception("DB: query failed: $template");
 		$this->insert_id=$this->con->insert_id;
@@ -85,15 +82,15 @@ class DB{
 };
 $database=new DB();
 
-function elemInSQLReq($elem,$col,$table){//Checks whether a specified element is in the specified column in the specified database.
+/*function elemInSQLReq($elem,$col,$table){//Checks whether a specified element is in the specified column in the specified database.
 	global $database;
 	
 	if(preg_match(DB_COL_REGEX,$col)===0)throw new Exception("eleminsqlreq: invalid col");
 	if(preg_match(DB_TABLE_REGEX,$table)===0)throw new Exception("eleminsqlreq: invalid table");
 	
-	return count($database->query_assoc("SELECT sum(case when %2%=\"%3%\" then 1 else 0 end) AS count FROM %1%",[$table,$col,$elem]))>0;
+	return count($database->query_assoc("SELECT sum(case when %1%=%2% then 1 else 0 end) AS count FROM %0%",[$table,$col,$elem]))>0;
 	//Select all from $table where value of $col is $elem. //If there's one or more rows, it is in the column.
-}
+}*/
 /*Permanently deprecated. Vestigial code for reference. Do NOT restore.
 function getSQLRowByID($idval,$col,$table){//Get row by *numeric* ID
 	if(!ctype_digit(strval($idval)))throw new Exception("getsqlrowbyid: non-integer id");//--todo-- all $_GET/$_POST variables are STRINGS. Make sure typetesting with ctype_digit.

@@ -1,5 +1,5 @@
 <h1>Random Question</h1>
-<a href="input.php">Enter Questions</a>
+<a href="input.php">Question Entry</a>
 <br>
 <?php
 require_once "qIO.php";
@@ -8,16 +8,18 @@ require_once "common.php";
 session_start();
 if(posted("rate","rateid","ver")&&isset($_SESSION["ver"])&&$_POST["ver"]===$_SESSION["ver"]){
 	unset($_SESSION["ver"]);
-	$q=new Question($_POST["rateid"]);
-	$rateval=intval($_POST["rate"]);
-	if($rateval<=2&&$rateval>=-2){$q->rate($rateval);echo "Voted question {$_POST["rateid"]} as {$rateval}; now rated {$q->getRating()}.";}
+	$q=new Questions();
+	$q->add([$_POST["rateid"]]);
+	$q->rate(0,$rateval=intval($_POST["rate"]));
+	echo "Voted question {$_POST["rateid"]} as {$rateval}; now rated {$q->getRating(0)}.";
 }
 ?>
 
 <br>
 <div id='question'>
 <?php
-$Q=new Questions("randpair");
+$Q=new Questions();
+$Q->add("randtossup");
 echo $Q->allToHTML();
 ?>
 </div>

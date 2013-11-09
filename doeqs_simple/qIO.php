@@ -150,14 +150,12 @@ function fileToStr($file){
 		//case "pdf": return implode("",pdf2string($file['tmp_name']));
 		
 		//case "csv"://really awk case. Plus not sanitized.
-		//$database->query_assoc("LOAD DATA INFILE '%1%' INTO TABLE questions FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\r\n' IGNORE 1 LINES",[$_FILE["file"]["tmp_name"]]);
+		//$database->query_assoc("LOAD DATA INFILE '%0%' INTO TABLE questions FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\r\n' IGNORE 1 LINES",[$_FILE["file"]["tmp_name"]]);
 		//return "";
 		
 		default: die("Unsupported file extension <i>$ext</i> - we currently support txt, html, doc, odt.");
 	}
 }
-
-
 
 
 
@@ -170,9 +168,12 @@ function qregex(){
 	
 	$mcChoices='';
 	$choiceArr=["W","X","Y","Z","ANSWER"];
-	for($i=0;$i<4;$i++)$mcChoices.=$choiceArr[$i].$e.'((?:(?!'.$choiceArr[$i+1].$e.')[\s\S])*)\s*';
-	return '/(TOSS\-?UP|BONUS)\s*(?:([0-9]+)[\.\)\- ])?\s*'.$subjChoices.'\s*(?:Multiple Choice\s*((?:(?!W'.$e.')[\s\S])*)\s*'.$mcChoices.'|Short Answer\s*((?:(?:(?!ANSWER'.$a.')[^\s\S])*)(?:\s*[IVX0-9]+'.$e.'(?:(?!ANSWER'.$a.')(?![IVX0-9]+'.$e.')[\s\S])*)*))\s*ANSWER'.$a.'*\s*((?:(?![\n\r]|$|TOSS\-?UP|BONUS)[\s\S])*)/i';
+	for($i=0;$i<4;$i++)$mcChoices.=$choiceArr[$i].$e.'((?:(?!'.$choiceArr[$i+1].$e.')[^\n\r])*)\s*';
+	return '/(TOSS\-?UP|BONUS)\s*(?:([0-9]+)[\.\)\- ])?\s*'.$subjChoices.'\s*(?:Multiple Choice\s*((?:(?!W'.$e.')[^\n\r])*)\s*'.$mcChoices.'|Short Answer\s*((?:(?:(?!ANSWER'.$a.')[^\n\r])*)(?:\s*[IVX0-9]+'.$e.'(?:(?!ANSWER'.$a.')(?![IVX0-9]+'.$e.')[^\n\r])*)*))\s*ANSWER'.$a.'*\s*((?:[^\n\r])*)([\n\r]|$)/i';
 }
+
+	//for($i=0;$i<4;$i++)$mcChoices.=$choiceArr[$i].$e.'((?:(?!'.$choiceArr[$i+1].$e.')[\s\S])*)\s*';
+	//return '/(TOSS\-?UP|BONUS)\s*(?:([0-9]+)[\.\)\- ])?\s*'.$subjChoices.'\s*(?:Multiple Choice\s*((?:(?!W'.$e.')[\s\S])*)\s*'.$mcChoices.'|Short Answer\s*((?:(?:(?!ANSWER'.$a.')[^\s\S])*)(?:\s*[IVX0-9]+'.$e.'(?:(?!ANSWER'.$a.')(?![IVX0-9]+'.$e.')[\s\S])*)*))\s*ANSWER'.$a.'*\s*((?:(?![\n\r]|$|TOSS\-?UP|BONUS)[\s\S])*)/i';
 
 //strParseQs - high-level question-parsing; accepts string of questions to parse, does whatever with them, and returns string of output.
 function strParseQs($qstr){
@@ -236,25 +237,26 @@ class Questions{//Does all the validation... for you! By not trusting you at all
 		}
 	public function add($paramsArray){//Add to the array of questions, each from array or ID.
 		global $ruleSet;
+		global $database;
+		
+		$RatingThreshold=-3;
 		
 		if(is_null($paramsArray)){//Huh. No parameters. -_-
 			throw new Exception("Q: No parameters");
 		}
-		elseif($paramsArray==="randpair"){
-			$row=array();
-			$row[]=$database->query_assoc("SELECT QID, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating FROM questions WHERE isMC=TRUE AND Rating > %1% AND Deleted=FALSE ORDER BY RAND() LIMIT 1",[$RatingThreshold]);
-			$row[]=$database->query_assoc("SELECT QID, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating FROM questions WHERE isMC=FALSE AND Rating > %1% AND Deleted=FALSE ORDER BY RAND() LIMIT 1",[$RatingThreshold]);
+		elseif($paramsArray==="rand"||$paramsArray==="randtossup"||$paramsArray==="randbonus"){
+			if($paramsArray==="randtossup")$row=$database->query_assoc("SELECT QID, isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating FROM questions WHERE isMC=TRUE AND Rating > %0% AND Deleted=0 ORDER BY RAND() LIMIT 1",[$RatingThreshold]);
+			else if($paramsArray==="randbonus")$row=$database->query_assoc("SELECT QID, isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating FROM questions WHERE isMC=FALSE AND Rating > %0% AND Deleted=0 ORDER BY RAND() LIMIT 1",[$RatingThreshold]);
+			else $row=$database->query_assoc("SELECT QID, isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating FROM questions WHERE Rating > %0% AND Deleted=0 ORDER BY RAND() LIMIT 1",[$RatingThreshold]);
 			
-			for($n=0;$n<1;$n++){
-				$this->QID[$n]=$row[$n]["QID"];
-				$this->isTU[$n]=$row[$n]["isTU"];
-				$this->Subject[$n]=$row[$n]["Subject"];
-				$this->isMC[$n]=$row[$n]["isMC"];
-				$this->Question[$n]=$row[$n]["Question"];
-				$this->MCChoices[$n]=[$row[$n]["MCW"],$row[$n]["MCX"],$row[$n]["MCY"],$row[$n]["MCZ"]];
-				$this->Answer[$n]=$row[$n]["Answer"];
-				$this->Rating[$n]=$row[$n]["Rating"];
-			}
+			$this->QID[]=$row["QID"];
+			$this->isTU[]=$row["isTU"];
+			$this->Subject[]=$row["Subject"];
+			$this->isMC[]=$row["isMC"];
+			$this->Question[]=$row["Question"];
+			$this->MCChoices[]=[$row["MCW"],$row["MCX"],$row["MCY"],$row["MCZ"]];
+			$this->Answer[]=$row["Answer"];
+			$this->Rating[]=$row["Rating"];
 			return;
 		}
 		
@@ -262,12 +264,8 @@ class Questions{//Does all the validation... for you! By not trusting you at all
 		$queryarr=array();
 		foreach($paramsArray as $n=>$params){
 			if($params==strval(intval($params))){
-				$RatingThreshold=-3;
-				if(elemInSQLReq($params,"QID","questions"))
-					$row=$database->query_assoc("SELECT QID, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating FROM questions WHERE QID = \"%1%\" AND Deleted=FALSE LIMIT 1",[$params]);
-				else
-					throw new Exception("question_construct: Invalid QID $params.");
-				if(count($row)==0)throw new Exception("Error: no questions in database");
+				$row=$database->query_assoc("SELECT QID, isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating FROM questions WHERE QID = %0% AND Deleted=FALSE LIMIT 1",[$params]);
+				if(count($row)==0)throw new Exception("Invalid QID provided.");
 				
 				$this->QID[$n]=$row["QID"];
 				$this->isTU[$n]=$row["isTU"];
@@ -385,13 +383,13 @@ class Questions{//Does all the validation... for you! By not trusting you at all
 	public function rate($i,$x){//Rate question.
 		global $database;
 		static $rated=array();
-		if($rated[$i]===true)return;
+		if(@$rated[$i]===true)return;
 		if($x!=intval($x))return;
 		//Being super-careful.
 		
 		if(intval($x)>=-2||intval($x)<=2){
 			$this->Rating[$i]+=intval($x);
-			$database->query_assoc("UPDATE questions SET Rating=Rating+%2% WHERE QID=%1% LIMIT 1",[$this->QID[$i],intval($x)]);
+			$database->query_assoc("UPDATE questions SET Rating=Rating+%1% WHERE QID=%0% LIMIT 1",[$this->QID[$i],intval($x)]);
 		}
 		
 		$rated[$i]=true;
