@@ -57,7 +57,7 @@ Enter some questions:
 	<h2>Copy-Paste</h2>
 	<form id="copypaste" action="input.php" method="POST" autocomplete="off">
 		Paste it all here:<br>
-		<textarea name="copypaste" style="width:100%;height:10em;"><?php echo @$unparsed;?></textarea><br>
+		<textarea name="copypaste" style="width:100%;height:10em;"><?php echo @preg_replace('/[\r\n]+/', "\n",$unparsed);?></textarea><br>
 		<input type="hidden" name="ver" value="<?php echo $_SESSION["ver"];?>"/>
 		<input type="submit" value="Submit Question(s)"/>
 	</form>

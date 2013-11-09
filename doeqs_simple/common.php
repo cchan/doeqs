@@ -42,7 +42,11 @@ else{
 	ini_set('display_errors','0');
 }
 
+
+
 require_once "sql.php";//SQL stuff, with access class and convenience functions
+
+
 
 function anyIndicesEmpty($array/*, var1, var2, ...,varN*/){//it's NOT anyIndicesNull. "" is empty.
 	$args=func_get_args();

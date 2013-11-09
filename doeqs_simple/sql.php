@@ -44,7 +44,7 @@ class DB{
 		if($in===""||$in===NULL)return '""';
 		//HTMLENTITIES TROUBLESHOOTING
 		if($in===true)$in="1";elseif($in===false)$in="0";//Explicit typecasting.
-		//Dealing with weird characters
+		/*//Dealing with weird characters
 		$search = array(chr(145), //dumb single quotes
 							chr(146), //dumb single quotes
 							chr(147), //dumb double quotes
@@ -56,16 +56,16 @@ class DB{
 							 '"', 
 							 '-');
 		
-		//--todo-- just change the charset of htmlentities -_- e.g. weird és
+		//--todo-- just change the charset of htmlentities -_- e.g. weird és*/
+		//str_replace($search, $replace, $in)
 		
-		$escaped=$this->con->real_escape_string(htmlentities(str_replace($search, $replace, $in)));
-		if($escaped=="")throw new Exception("HTMLENTITIES empty for string: ");
+		$escaped=$this->con->real_escape_string(htmlentities($in,ENT_QUOTES|ENT_HTML401,'ISO-8859-1'));
+		if($escaped==""){throw new Exception(var_dump($in)."HTMLENTITIES empty for string: ");};
 		return '"'.$escaped.'"';
 	}
-	public function query($template,$replaceArr){//Is it safe if you use real_escape_string?
-		for($i=0;$i<count($replaceArr);$i++){//Replace all the %% var things
-			$template=str_replace("%$i%",$this->sanitize($replaceArr[$i]),$template);
-		}
+	public function query($template,$replaceArr=array()){//Is this safe??...
+		foreach($replaceArr as $ind=>$replace)//Replace all the %% var things
+			$template=str_replace("%$ind%",$this->sanitize($replace),$template);
 		if(isDestructiveQuery($template))throw new Exception("DB: GRUMPYCAT NO - destructive query");
 		
 		//static $asdf=1;
@@ -77,7 +77,7 @@ class DB{
 		
 		return $qresult;
 	}
-	public function query_assoc($template,$replaceArr){
+	public function query_assoc($template,$replaceArr=array()){
 		$qresult=$this->query($template,$replaceArr);
 		if($qresult===true)return true;//not a data-gathering query
 		return $qresult->fetch_assoc();

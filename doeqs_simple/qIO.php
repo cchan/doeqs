@@ -192,7 +192,6 @@ function qregex(){
 //strParseQs - high-level question-parsing; accepts string of questions to parse, does whatever with them, and returns string of output.
 function strParseQs($qstr){
 	$nMatches=preg_match_all(qregex(), $qstr, $qtext);
-	$qstr=str_replace(array("\r", "\n"), "" ,$qstr);//Normalizing and trying again? [then it will catch the "DOE TEAM QUESTIONS" thing
 	
 	$qs=new Questions();
 	for($i=0;$i<$nMatches;$i++){
@@ -215,7 +214,7 @@ function strParseQs($qstr){
 	$qs->commit();
 	$parsedQIDs=$qs->getQIDs();
 	
-	echo "Duplicates: none";
+	echo "Duplicates: none<br><br>";
 	echo "<b>Total uploaded Question-IDs: ".((count($parsedQIDs)==0)?"no questions entered":arrayToRanges($parsedQIDs)." (".count($parsedQIDs)." total entered)")."</b>";
 	return preg_replace(qregex(),"",$qstr);//stuff remaining after questions detected
 }
@@ -331,22 +330,21 @@ class Questions{//Does all the validation... for you! By not trusting you at all
 				throw new Exception("Q: Bad parameters");
 			}
 		}
-		//http://stackoverflow.com/questions/18932/how-can-i-remove-duplicate-rows no idea what it does
-		$database->query_assoc("UPDATE questions SET Deleted=TRUE WHERE QID NOT IN (SELECT MIN(QID) FROM questions WHERE Deleted=FALSE GROUP BY Question)");
-		//--todo--so how to do this for our php copy of the questions?
 	}
 	
 	public function commit(){
 		global $database;
-		$max_query_length=1000;//Estimated. Be safe.
+		$max_query_length=1000;//Estimated maximum query length; be safe and go well below the actual.
 		$i=0;//which iteration we're on.
 		$q='INSERT INTO questions (isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer) VALUES ';
 		$valarr=array();
 		$lengthestimate=count($q);
+		$QIDs=array();
 		foreach($this->QID as $ind=>$val){
 			$lengthestimate+=count($this->Question[$ind])+count(implode($this->MCChoices[$ind]))+count($this->Answer[$ind])+20;
 			if($lengthestimate-1>$max_query_length){
 				$database->query_assoc(substr($q,0,-1),$valarr);
+				for($j=0;$j<$i;$j++)$QIDs[]=$database->insert_id+$j;
 				$i=0;
 				$q='INSERT INTO questions (isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer) VALUES ';
 				$lengthestimate=count($q);
@@ -360,10 +358,17 @@ class Questions{//Does all the validation... for you! By not trusting you at all
 				$this->MCChoices[$ind][0],$this->MCChoices[$ind][1],$this->MCChoices[$ind][2],$this->MCChoices[$ind][3],
 				$this->Answer[$ind]);
 			$q.=$textadd.",";
-			$this->QID[$ind]=mt_rand();
 			$i++;
 		}
 		if(count($valarr)>0)$database->query_assoc(substr($q,0,-1),$valarr);//What QIDs?????????????????????????
+		for($j=0;$j<$i;$j++)$QIDs[]=$database->insert_id+$j;
+		
+		foreach($QIDs as $ind=>$QID)$this->QID[$ind]=$QID;
+		
+		//:( duplicates
+		//http://stackoverflow.com/questions/18932/how-can-i-remove-duplicate-rows no idea what it does
+		//$database->query_assoc("UPDATE questions SET Deleted=TRUE WHERE QID NOT IN (SELECT MIN(QID) FROM questions WHERE Deleted=FALSE GROUP BY Question)");
+		//--todo--so how to do this for our php copy of the questions?
 	}
 	
 	public function toHTML($i,$plainans=true){//Return nice HTML.
