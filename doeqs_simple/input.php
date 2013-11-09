@@ -10,7 +10,7 @@ global $ruleSet;
 session_start();
 if(isSet($_POST["ver"])&&isSet($_SESSION["ver"])&&$_POST["ver"]==$_SESSION["ver"]){
 	unset($_SESSION["ver"]);
-	if(isSet($_POST["copypaste"])||isSet($_FILES["file"])||isSet($_POST["directentry"])){
+	if(isSet($_POST["copypaste"])||isSet($_FILES["fileupload"])||isSet($_POST["directentry"])){
 		echo '<div style="font-size:0.8em;border:solid 1px #000000;display:inline-block;padding:5px;">
 			<i>We are processing your questions right now...</i><br><br>';
 		if(isSet($_POST["copypaste"]))$unparsed=strParseQs($_POST["copypaste"]);

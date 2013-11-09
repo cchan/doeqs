@@ -35,38 +35,23 @@ define("DB_DB","doeqs_simple");
 require_once "common.php";
 
 
-//do_post_request, does a post request to the given url, attaching the given file, from http://stackoverflow.com/questions/13785433/php-upload-file-to-another-server-without-curl
-function do_post_request($url, $file){ 
-	$data = ""; 
-	$boundary = "---------------------".substr(md5(rand(0,32000)), 0, 10); 
-
-	$data .= "--$boundary\n"; 
-
-	//Collect Filedata 
-	$data .= "Content-Disposition: form-data; name=\"filename\"; filename=\"{$file['name']}\"\n"; 
-	$data .= "Content-Type: image/jpeg\n"; 
-	$data .= "Content-Transfer-Encoding: binary\n\n"; 
-	$data .= file_get_contents($file['tmp_name'])."\n"; 
-	$data .= "--$boundary--\n"; 
-
-	$params = array('http' => array( 
-		   'method' => 'POST', 
-		   'header' => 'Content-Type: multipart/form-data; boundary='.$boundary, 
-		   'content' => $data 
-		)); 
-
-   $ctx = stream_context_create($params); 
-   $fp = fopen($url, 'rb', false, $ctx); 
-
-   if (!$fp) { 
-	  throw new Exception("Problem with $url, $php_errormsg"); 
-   } 
-
-   $response = @stream_get_contents($fp); 
-   if ($response === false) { 
-	  throw new Exception("Problem reading data from $url, $php_errormsg"); 
-   } 
-   return $response; 
+//http://stackoverflow.com/questions/5540886/extract-text-from-doc-and-docx
+function read_doc($filename) {
+    $fileHandle = fopen($filename, "r");
+    $line = @fread($fileHandle, filesize($filename));   
+    $lines = explode(chr(0x0D),$line);
+    $outtext = "";
+    foreach($lines as $thisline)
+      {
+        $pos = strpos($thisline, chr(0x00));
+        if (($pos !== FALSE)||(strlen($thisline)==0))
+          {
+          } else {
+            $outtext .= $thisline."\n";
+          }
+      }
+     $outtext = preg_replace("/[^a-zA-Z0-9\s\,\.\-\n\r\t@\/\_\(\)]/","",$outtext);
+    return $outtext;
 }
 
 
@@ -116,15 +101,15 @@ function pdf2string ($sourceFile)
 
 
   
-  
+//DOCX and ODT are variations on zipped XML
 function odt2text($filename) {
-    return readZippedXML($filename, "content.xml");
+    return strip_tags(str_replace("<text","\n<text",readZippedXML($filename, "content.xml")));
 }
-
 function docx2text($filename) {
-    return readZippedXML($filename, "word/document.xml");
+//NOOOOOOO this isn't working... need to remove <w:prooferr and other tags (& children) somehow...
+//ALSOOOOO make the regex even better, to detect it _without_ needing linebreaks!
+    return strip_tags(preg_replace("<w:prooferr","\n",readZippedXML($filename, "word/document.xml")));
 }
-
 function readZippedXML($archiveFile, $dataFile) {
     // Create new ZIP archive
     $zip = new ZipArchive;
@@ -140,8 +125,10 @@ function readZippedXML($archiveFile, $dataFile) {
             // Load XML from a string
             // Skip errors and warnings
             $xml = DOMDocument::loadXML($data, LIBXML_NOENT | LIBXML_XINCLUDE | LIBXML_NOERROR | LIBXML_NOWARNING);
+			
             // Return data without XML formatting tags
-            return strip_tags($xml->saveXML());
+			echo $xml->saveXML();
+            return $xml->saveXML();
         }
         $zip->close();
     }
@@ -157,17 +144,16 @@ function fileToStr($file){
 	switch($ext){
 		case "txt": return file_get_contents($file['tmp_name']);
 		case "html": case "htm": return strip_tags(file_get_contents($file['tmp_name']));//get rid of all html tags
-		case "doc"://Credit: Seriously abusing the demo of http://www.phpwordlib.motion-bg.com/ [--todo--note filesize limit]
-			$xmlstr=do_post_request("http://www.phpwordlib.motion-bg.com/phpwordlib.php", $file);
-			return substr($xmlstr,strpos($xmlstr,"<pre>")+5,strpos($xmlstr,"</pre>")-strpos($xmlstr,"<pre>")-5);
-		case "docx": return docx2text($file['tmp_name']);
+		case "doc":	return read_doc($file['tmp_name']);
+		//case "docx": return docx2text($file['tmp_name']);
 		case "odt": return odt2text($file['tmp_name']);
-		case "pdf": return implode("",pdf2string($file['tmp_name']));
-		case "csv":
+		//case "pdf": return implode("",pdf2string($file['tmp_name']));
+		
+		//case "csv"://really awk case. Plus not sanitized.
 		//$database->query_assoc("LOAD DATA INFILE '%1%' INTO TABLE questions FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\r\n' IGNORE 1 LINES",[$_FILE["file"]["tmp_name"]]);
 		//return "";
 		
-		default: die("Unsupported file extension <i>$ext</i> - we currently support txt, html, doc, docx, odt, pdf.");
+		default: die("Unsupported file extension <i>$ext</i> - we currently support txt, html, doc, odt.");
 	}
 }
 
@@ -177,7 +163,6 @@ function fileToStr($file){
 
 
 function qregex(){
-//dafuq [in regexpal] it works fine except doesn't match mc questions where there's "how" or "law" in the question, or where there's "only" in X
 //also, mislabeled MC as SA passes in no-linebreaks mode
 	$subjChoices='(ENERGY|BIO(?:LOGY)?|CHEM(?:ISTRY)?|PHYS(?:|ICS|ICAL SCIENCE)|MATH(?:EMATICS)?|E(?:SS|ARTHSCI|ARTH SCIENCE|ARTH AND SPACE SCIENCE))';
 	$e='[\:\.\)\- ]';//W. or W) or W- or W: or W .
@@ -185,12 +170,15 @@ function qregex(){
 	
 	$mcChoices='';
 	$choiceArr=["W","X","Y","Z","ANSWER"];
-	for($i=0;$i<4;$i++)$mcChoices.=$choiceArr[$i].$e.'((?:(?!'.$choiceArr[$i+1].$e.')[^\n\r])*)\s*';
-	return '/(TOSS\-?UP|BONUS)\s*(?:([0-9]+)[\.\)\- ])?\s*'.$subjChoices.'\s*(?:Multiple Choice\s*((?:(?!W'.$e.')[^\n\r])*)\s*'.$mcChoices.'|Short Answer\s*((?:(?:(?!ANSWER'.$a.')[^\n\r])*)(?:\s*[IVX0-9]+'.$e.'(?:(?!ANSWER'.$a.')(?![IVX0-9]+'.$e.')[^\n\r])*)*))\s*ANSWER'.$a.'*\s*((?:(?!TOSS\-?UP)(?!BONUS)[^\n\r])*)/i';
+	for($i=0;$i<4;$i++)$mcChoices.=$choiceArr[$i].$e.'((?:(?!'.$choiceArr[$i+1].$e.')[\s\S])*)\s*';
+	return '/(TOSS\-?UP|BONUS)\s*(?:([0-9]+)[\.\)\- ])?\s*'.$subjChoices.'\s*(?:Multiple Choice\s*((?:(?!W'.$e.')[\s\S])*)\s*'.$mcChoices.'|Short Answer\s*((?:(?:(?!ANSWER'.$a.')[^\s\S])*)(?:\s*[IVX0-9]+'.$e.'(?:(?!ANSWER'.$a.')(?![IVX0-9]+'.$e.')[\s\S])*)*))\s*ANSWER'.$a.'*\s*((?:(?![\n\r]|$|TOSS\-?UP|BONUS)[\s\S])*)/i';
 }
 
 //strParseQs - high-level question-parsing; accepts string of questions to parse, does whatever with them, and returns string of output.
 function strParseQs($qstr){
+	if($qstr===""){echo "Error: No text submitted.";return "";}
+	if(strpos($qstr,"\n")===false){echo "Needs line breaks for delineation; no questions uploaded.";return $qstr;}
+	
 	$nMatches=preg_match_all(qregex(), $qstr, $qtext);
 	
 	$qs=new Questions();
@@ -207,14 +195,12 @@ function strParseQs($qstr){
 				"MCa"=>strpos('wxyz',strtolower(substr(trim($qtext[10][$i]),0,1))),
 				]]);
 		}
-		catch(Exception $e){
-			
-		}
+		catch(Exception $e){}
 	}
 	$qs->commit();
 	$parsedQIDs=$qs->getQIDs();
 	
-	echo "Duplicates: none<br><br>";
+	/*echo "Duplicates: none<br><br>";*/
 	echo "<b>Total uploaded Question-IDs: ".((count($parsedQIDs)==0)?"no questions entered":arrayToRanges($parsedQIDs)." (".count($parsedQIDs)." total entered)")."</b>";
 	return preg_replace(qregex(),"",$qstr);//stuff remaining after questions detected
 }
@@ -313,9 +299,8 @@ class Questions{//Does all the validation... for you! By not trusting you at all
 				//Deal with MC vs SA
 				if($this->isMC[$n]){
 					if(anyIndicesEmpty($this->MCChoices[$n],0,1,2,3))throw new Exception("Some multiple choice blank");
-					if($this->Answer=strpos('wxyz',strtolower(substr(trim($this->Answer[$n]),0,1)))===false)throw new Exception("Invalid answer");
+					if(($this->Answer[$n]=strpos('wxyz',strtolower(substr(trim($this->Answer[$n]),0,1))))===false)throw new Exception("Invalid answer");
 				}
-				else $this->Answer[$n]=$params["Answer"];
 				
 				//Start value for rating.
 				$this->Rating=0;
