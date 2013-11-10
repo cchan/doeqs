@@ -1,0 +1,14 @@
+#main-wrapper{
+width:70%;min-width:500px;
+margin-left:auto;margin-right:auto;
+margin-top:50px;
+border:solid 1px #000000;
+padding:20px;
+}
+#question{
+width:80%;min-width:300px;
+margin-left:auto;margin-right:auto;
+min-height:100px;
+border:solid 1px #000000;
+padding:10px;
+}

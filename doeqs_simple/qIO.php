@@ -124,10 +124,9 @@ function readZippedXML($archiveFile, $dataFile) {
             $zip->close();
             // Load XML from a string
             // Skip errors and warnings
-            $xml = DOMDocument::loadXML($data, LIBXML_NOENT | LIBXML_XINCLUDE | LIBXML_NOERROR | LIBXML_NOWARNING);
+           @ $xml = DOMDocument::loadXML($data, LIBXML_NOENT | LIBXML_XINCLUDE | LIBXML_NOERROR | LIBXML_NOWARNING);
 			
             // Return data without XML formatting tags
-			echo $xml->saveXML();
             return $xml->saveXML();
         }
         $zip->close();
@@ -143,7 +142,7 @@ function fileToStr($file){
 	$ext=substr($file['name'],strrpos($file['name'],'.')+1);
 	switch($ext){
 		case "txt": return file_get_contents($file['tmp_name']);
-		case "html": case "htm": return strip_tags(file_get_contents($file['tmp_name']));//get rid of all html tags
+		case "html": case "htm": return strip_tags(str_replace(["<br>","<div>"],"\n",file_get_contents($file['tmp_name'])));//get rid of all html tags, but keep some linebreaks there.
 		case "doc":	return read_doc($file['tmp_name']);
 		//case "docx": return docx2text($file['tmp_name']);
 		case "odt": return odt2text($file['tmp_name']);
@@ -161,6 +160,7 @@ function fileToStr($file){
 
 
 function qregex(){
+//dafuq [in regexpal] it works fine except doesn't match mc questions where there's "how" or "law" in the question, or where there's "only" in X
 //also, mislabeled MC as SA passes in no-linebreaks mode
 	$subjChoices='(ENERGY|BIO(?:LOGY)?|CHEM(?:ISTRY)?|PHYS(?:|ICS|ICAL SCIENCE)|MATH(?:EMATICS)?|E(?:SS|ARTHSCI|ARTH SCIENCE|ARTH AND SPACE SCIENCE))';
 	$e='[\:\.\)\- ]';//W. or W) or W- or W: or W .
@@ -244,21 +244,41 @@ class Questions{//Does all the validation... for you! By not trusting you at all
 		if(is_null($paramsArray)){//Huh. No parameters. -_-
 			throw new Exception("Q: No parameters");
 		}
-		elseif($paramsArray==="rand"||$paramsArray==="randtossup"||$paramsArray==="randbonus"){
-			if($paramsArray==="randtossup")$row=$database->query_assoc("SELECT QID, isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating FROM questions WHERE isMC=TRUE AND Rating > %0% AND Deleted=0 ORDER BY RAND() LIMIT 1",[$RatingThreshold]);
-			else if($paramsArray==="randbonus")$row=$database->query_assoc("SELECT QID, isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating FROM questions WHERE isMC=FALSE AND Rating > %0% AND Deleted=0 ORDER BY RAND() LIMIT 1",[$RatingThreshold]);
-			else $row=$database->query_assoc("SELECT QID, isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating FROM questions WHERE Rating > %0% AND Deleted=0 ORDER BY RAND() LIMIT 1",[$RatingThreshold]);
+		elseif($paramsArray==="rand"||$paramsArray==="randtossup"||$paramsArray==="randbonus"||$paramsArray==="randpair"){
+			$row=array();
+			$query="SELECT QID, isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating FROM questions 
+WHERE Rating > %0% AND Deleted=0
+AND TimesViewed IN (SELECT MIN(TimesViewed) FROM questions WHERE Deleted=0)
+ORDER BY RAND() LIMIT 1";
+			if($paramsArray==="randtossup")$row[]=$database->query_assoc(str_replace("WHERE","WHERE isTU=TRUE AND",$query),[$RatingThreshold]);
+			else if($paramsArray==="randbonus")$row[]=$database->query_assoc(str_replace("WHERE","WHERE isTU=FALSE AND",$query),[$RatingThreshold]);
+			//else if($paramsArray==="randpair"){
+			//	$row[]=$database->query_assoc(str_replace("WHERE","WHERE isTU=TRUE AND",$query),[$RatingThreshold]);
+			//	$row[]=$database->query_assoc(str_replace("WHERE","WHERE isTU=FALSE AND Subject=%1% AND",$query,$row[count($row)-1]["Subject"]),[$RatingThreshold]);
+			//}
+			else $row[]=$database->query_assoc($query,[$RatingThreshold]);
 			
-			$this->QID[]=$row["QID"];
-			$this->isTU[]=$row["isTU"];
-			$this->Subject[]=$row["Subject"];
-			$this->isMC[]=$row["isMC"];
-			$this->Question[]=$row["Question"];
-			$this->MCChoices[]=[$row["MCW"],$row["MCX"],$row["MCY"],$row["MCZ"]];
-			$this->Answer[]=$row["Answer"];
-			$this->Rating[]=$row["Rating"];
+			if(count($row)==0)throw new Exception("No questions in database.");
+			
+			
+			foreach($row as $r){
+				$database->query_assoc("UPDATE questions SET TimesViewed=TimesViewed+1 WHERE QID=%0%",[$r["QID"]]);
+				$this->QID[]=$r["QID"];
+				$this->isTU[]=$r["isTU"];
+				$this->Subject[]=$r["Subject"];
+				$this->isMC[]=$r["isMC"];
+				$this->Question[]=$r["Question"];
+				$this->MCChoices[]=[$r["MCW"],$r["MCX"],$r["MCY"],$r["MCZ"]];
+				$this->Answer[]=$r["Answer"];
+				$this->Rating[]=$r["Rating"];
+			}
 			return;
 		}
+		elseif(!is_array($paramsArray)){
+			throw new Exception("Invalid input params");
+		}
+		
+		
 		
 		$queryadd="INSERT INTO questions (Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer) VALUES ";
 		$queryarr=array();
@@ -360,10 +380,13 @@ class Questions{//Does all the validation... for you! By not trusting you at all
 		$return="<div class='question'>";
 		$return.="[QID {$this->QID[$i]}, rating {$this->Rating[$i]}]";
 		$return.="<div style='font-weight:bold;text-align:center;'>{$ruleSet["QParts"][!$this->isTU[$i]]}</div>{$ruleSet["Subjects"][$this->Subject[$i]]} <i>{$ruleSet["QTypes"][(int)$this->isMC[$i]]}</i> ".nl2br(strip_tags($this->Question[$i]))."<br>";
-		if(isSet($this->MCChoices[$i]))for($j=0;$j<4;$j++)$return.="{$ruleSet["MCChoices"][$j]}) {$this->MCChoices[$i][$j]}<br>";
-		if($plainans)$return.="<br>ANSWER: <b>".strip_tags($this->Answer[$i])."</b><br>";
+		if($this->isMC[$i])for($j=0;$j<4;$j++)$return.="<div style='font-size:0.9em;'>{$ruleSet["MCChoices"][$j]}) {$this->MCChoices[$i][$j]}</div>";
+		
+		$AnswerText=($this->isMC[$i])?$ruleSet["MCChoices"][$this->Answer[$i]].") ".$this->MCChoices[$i][$this->Answer[$i]]//MC
+				:strip_tags($this->Answer[$i]);//SA
+		if($plainans)$return.="<br>ANSWER: <b>$AnswerText</b><br>";
 		else{
-			$return.="<br>ANSWER: <span class='hiddenanswer'><span class='ans'>".strip_tags($this->Answer[$i])."</span> <span class='hov'>[hover for answer]</span></span><br>";
+			$return.="<br>ANSWER: <span class='hiddenanswer'><span class='ans'>$AnswerText</span> <span class='hov'>[hover for answer]</span></span><br>";
 			$return.="<style type='text/css'>.hiddenanswer .hov{font-weight:bold;color:#00f;font-size:0.8em;}.hiddenanswer .ans{display:none;font-weight:bold;}.hiddenanswer:hover .ans{display:inline;}</style>";
 		}
 		$return.="</div>";

@@ -1,3 +1,5 @@
+<link rel="stylesheet" href="style.css"/>
+<div id="main-wrapper">
 <h1>Question Entry</h1>
 <a href="randq.php">Get Random Question</a><br>
 <br><br>
@@ -5,9 +7,8 @@
 <?php
 require_once "qIO.php";
 require_once "common.php";
-global $ruleSet;
-
 session_start();
+
 if(isSet($_POST["ver"])&&isSet($_SESSION["ver"])&&$_POST["ver"]==$_SESSION["ver"]){
 	unset($_SESSION["ver"]);
 	if(isSet($_POST["copypaste"])||isSet($_FILES["fileupload"])||isSet($_POST["directentry"])){
@@ -24,10 +25,8 @@ if(isSet($_POST["ver"])&&isSet($_SESSION["ver"])&&$_POST["ver"]==$_SESSION["ver"
 			else echo $err;
 		}
 		echo "<br><br>";
-/*trim??*/if(str_replace(array("\n","\r"," ","	"),"",$unparsed)!="")
-			echo "Below, in the copy-paste section, are what remains in the document after detecting all the questions we could find.<br>"
-				."<span style='font-size:0.8em;'>(Common syntax errors include multi-line question statement, improperly labeled (as MC or SA), "
-				."missing some necessary components (like multiple choices and an answer), mislabeled multiple choice, really horrible misspellings.)</span>";
+		if(str_replace(array("\n","\r"," ","	"),"",$unparsed)!="")
+			echo "Below, in the copy-paste section, are what remains in the document after detecting all the questions we could find.<br>";
 		else echo "No unparsed question text found. Yay!";
 		
 		echo '</div><br><br>';
@@ -55,8 +54,23 @@ Enter some questions:
 	</form>
 	
 	<h2>Copy-Paste</h2>
+	
 	<form id="copypaste" action="input.php" method="POST" autocomplete="off">
-		Paste it all here:<br>
+		<?php if(str_replace(array("\n","\r"," ","	"),"",$unparsed)!=""){?>
+			<div style='font-size:0.8em;'>
+			Common syntax errors include:
+			<ul>
+			<li>a multi-line question statement,</li>
+			<li>improperly labeled type (as "Multiple Choice" or "Short Answer" or even "Question Type"),
+			<li>missing some necessary components (like multiple choices and an answer)</li>
+			<li>mislabeled multiple choice choices</li>
+			<li>really horrible misspellings of keywords</li>
+			</ul>
+			Also note that sometimes the detector will reject perfectly valid questions.
+			</div>
+		<?php }else{?>
+			Paste it all here:<br>
+		<?php }?>
 		<textarea name="copypaste" style="width:100%;height:10em;"><?php echo @preg_replace('/[\r\n]+/', "\n",$unparsed);?></textarea><br>
 		<input type="hidden" name="ver" value="<?php echo $_SESSION["ver"];?>"/>
 		<input type="submit" value="Submit Question(s)"/>
@@ -68,4 +82,5 @@ Enter some questions:
 		<input type="hidden" name="ver" value="<?php echo $_SESSION["ver"];?>"/>
 		<input type="submit" value="Upload"><br>
 	</form>
+</div>
 </div>
