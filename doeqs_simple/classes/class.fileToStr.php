@@ -7,13 +7,13 @@ class fileToStr{
 		$ext=substr($file['name'],strrpos($file['name'],'.')+1);
 		switch($ext){
 			case "txt": return file_get_contents($file['tmp_name']);
-			case "html": case "htm": return strip_tags(str_replace(["<br>","<div>"],"\n",file_get_contents($file['tmp_name'])));//get rid of all html tags, but keep some linebreaks there.
+			case "html": case "htm": return strip_tags(str_replace(array("<br>","<div>"),"\n",file_get_contents($file['tmp_name'])));//get rid of all html tags, but keep some linebreaks there.
 			case "doc":	return $this->docToText($file['tmp_name']);
 			case "docx": return $this->docxToText($file['tmp_name']);
 			case "odt": return $this->odtToText($file['tmp_name']);
 			//case "pdf": return $this->pdfToText($file['tmp_name']);
 			//case "csv"://really awk case. Plus not sanitized. D:
-			//$database->query_assoc("LOAD DATA INFILE '%0%' INTO TABLE questions FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\r\n' IGNORE 1 LINES",[$_FILE["file"]["tmp_name"]]);
+			//$database->query_assoc("LOAD DATA INFILE '%0%' INTO TABLE questions FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\r\n' IGNORE 1 LINES",($_FILE["file"]["tmp_name"]));
 			
 			default:
 				return "Unsupported file extension <i>$ext</i> - we currently support txt, html, doc, docx, odt.";

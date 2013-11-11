@@ -187,7 +187,7 @@ ORDER BY RAND() LIMIT 1";
 	public function rate($i,$x){//Rate question.
 		global $database;
 		static $rated=array();
-		if(@$rated[$i]===true)return;
+		if(array_key_exists($i,$rated))return;
 		if($x!=intval($x))return;
 		//Being super-careful.
 		

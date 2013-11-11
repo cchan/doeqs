@@ -16,7 +16,7 @@ if(isSet($_POST["ver"])&&isSet($_SESSION["ver"])&&$_POST["ver"]==$_SESSION["ver"
 			<i>We are processing your questions right now...</i><br><br>';
 		if(isSet($_POST["directentry"])){
 			$err="";
-			try{$q=new qIO([$_POST]);}
+			try{$q=new qIO(array($_POST));}
 			catch(Exception $e){$err="Error: ".$e->getMessage();}
 			
 			if($err=="")echo "Question entered successfully, with Question-ID <b>".(new Question($_POST))->getQID()."</b><br><br><br>";
@@ -30,7 +30,7 @@ if(isSet($_POST["ver"])&&isSet($_SESSION["ver"])&&$_POST["ver"]==$_SESSION["ver"
 				if(is_array($_FILES["fileupload"]["tmp_name"])){
 					foreach($_FILES["fileupload"]["tmp_name"] as $ind=>$tmp_name){
 						$name=$_FILES["fileupload"]["name"][$ind];
-						$unparsed.=$qp->parse($fs->convert(["tmp_name"=>$tmp_name,"name"=>$name]));
+						$unparsed.=$qp->parse($fs->convert(array("tmp_name"=>$tmp_name,"name"=>$name)));
 					}
 				}
 				else $unparsed=$qp->parse($fs->convert($_FILES["fileupload"]));
