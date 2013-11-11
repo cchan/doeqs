@@ -45,7 +45,7 @@ class DB{
 		if($in===""||$in===NULL)return '""';
 		//HTMLENTITIES TROUBLESHOOTING
 		if($in===true)$in="1";elseif($in===false)$in="0";//Explicit typecasting.
-		/*//Dealing with weird characters
+		//Dealing with weird characters
 		$search = array(chr(145), //dumb single quotes
 							chr(146), //dumb single quotes
 							chr(147), //dumb double quotes
@@ -56,11 +56,9 @@ class DB{
 							 '"', 
 							 '"', 
 							 '-');
+		$processed=str_replace($search, $replace, $in);
 		
-		//--todo-- just change the charset of htmlentities -_- e.g. weird és*/
-		//str_replace($search, $replace, $in)
-		
-		$escaped=$this->con->real_escape_string(htmlentities($in,ENT_QUOTES|ENT_HTML401,'ISO-8859-1'));
+		$escaped=$this->con->real_escape_string(htmlentities($processed,ENT_QUOTES|ENT_HTML401,'ISO-8859-1'));
 		if($escaped==""){throw new Exception(var_dump($in)."HTMLENTITIES empty for string: ");};
 		return '"'.$escaped.'"';
 	}
