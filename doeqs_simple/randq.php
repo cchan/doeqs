@@ -11,7 +11,7 @@ require_once "functions.php";
 if(posted("rate","rateid","ver")&&sessioned("ver")&&$_POST["ver"]===$_SESSION["ver"]){
 	unset($_SESSION["ver"]);
 	$q=new qIO();
-	$q->add([$_POST["rateid"]]);
+	$q->add(array($_POST["rateid"]));
 	$q->rate(0,$rateval=intval($_POST["rate"]));
 	echo "<div style='font-weight:bold;font-size:0.9em;'>Voted question {$_POST["rateid"]} as {$rateval}; total rating now {$q->getRating(0)}.</div>";
 	unset($q);

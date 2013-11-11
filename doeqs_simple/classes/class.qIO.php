@@ -30,25 +30,25 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 WHERE Rating > %0% AND Deleted=0
 AND TimesViewed IN (SELECT MIN(TimesViewed) FROM questions WHERE Deleted=0)
 ORDER BY RAND() LIMIT 1";
-			if($paramsArray==="randtossup")$row[]=$database->query_assoc(str_replace("WHERE","WHERE isTU=TRUE AND",$query),[$RatingThreshold]);
-			else if($paramsArray==="randbonus")$row[]=$database->query_assoc(str_replace("WHERE","WHERE isTU=FALSE AND",$query),[$RatingThreshold]);
+			if($paramsArray==="randtossup")$row[]=$database->query_assoc(str_replace("WHERE","WHERE isTU=TRUE AND",$query),array($RatingThreshold));
+			else if($paramsArray==="randbonus")$row[]=$database->query_assoc(str_replace("WHERE","WHERE isTU=FALSE AND",$query),array($RatingThreshold));
 			//else if($paramsArray==="randpair"){
-			//	$row[]=$database->query_assoc(str_replace("WHERE","WHERE isTU=TRUE AND",$query),[$RatingThreshold]);
-			//	$row[]=$database->query_assoc(str_replace("WHERE","WHERE isTU=FALSE AND Subject=%1% AND",$query,$row[count($row)-1]["Subject"]),[$RatingThreshold]);
+			//	$row[]=$database->query_assoc(str_replace("WHERE","WHERE isTU=TRUE AND",$query),array($RatingThreshold));
+			//	$row[]=$database->query_assoc(str_replace("WHERE","WHERE isTU=FALSE AND Subject=%1% AND",$query,$row[count($row)-1]["Subject"]),array($RatingThreshold));
 			//}
-			else $row[]=$database->query_assoc($query,[$RatingThreshold]);
+			else $row[]=$database->query_assoc($query,array($RatingThreshold));
 			
 			if(count($row)==0)throw new Exception("No questions in database.");
 			
 			
 			foreach($row as $r){
-				$database->query_assoc("UPDATE questions SET TimesViewed=TimesViewed+1 WHERE QID=%0%",[$r["QID"]]);
+				$database->query_assoc("UPDATE questions SET TimesViewed=TimesViewed+1 WHERE QID=%0%",array($r["QID"]));
 				$this->QID[]=$r["QID"];
 				$this->isTU[]=$r["isTU"];
 				$this->Subject[]=$r["Subject"];
 				$this->isMC[]=$r["isMC"];
 				$this->Question[]=$r["Question"];
-				$this->MCChoices[]=[$r["MCW"],$r["MCX"],$r["MCY"],$r["MCZ"]];
+				$this->MCChoices[]=array($r["MCW"],$r["MCX"],$r["MCY"],$r["MCZ"]);
 				$this->Answer[]=$r["Answer"];
 				$this->Rating[]=$r["Rating"];
 			}
@@ -64,7 +64,7 @@ ORDER BY RAND() LIMIT 1";
 		$queryarr=array();
 		foreach($paramsArray as $n=>$params){
 			if($params==strval(intval($params))){
-				$row=$database->query_assoc("SELECT QID, isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating FROM questions WHERE QID = %0% AND Deleted=FALSE LIMIT 1",[$params]);
+				$row=$database->query_assoc("SELECT QID, isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating FROM questions WHERE QID = %0% AND Deleted=FALSE LIMIT 1",array($params));
 				if(count($row)==0)throw new Exception("Invalid QID provided.");
 				
 				$this->QID[$n]=$row["QID"];
@@ -72,7 +72,7 @@ ORDER BY RAND() LIMIT 1";
 				$this->Subject[$n]=$row["Subject"];
 				$this->isMC[$n]=$row["isMC"];
 				$this->Question[$n]=$row["Question"];
-				$this->MCChoices[$n]=[$row["MCW"],$row["MCX"],$row["MCY"],$row["MCZ"]];
+				$this->MCChoices[$n]=array($row["MCW"],$row["MCX"],$row["MCY"],$row["MCZ"]);
 				$this->Answer[$n]=$row["Answer"];
 				$this->Rating[$n]=$row["Rating"];
 			}
@@ -193,7 +193,7 @@ ORDER BY RAND() LIMIT 1";
 		
 		if(intval($x)>=-1||intval($x)<=1){
 			$this->Rating[$i]+=intval($x);
-			$database->query_assoc("UPDATE questions SET Rating=Rating+%1% WHERE QID=%0% LIMIT 1",[$this->QID[$i],intval($x)]);
+			$database->query_assoc("UPDATE questions SET Rating=Rating+%1% WHERE QID=%0% LIMIT 1",array($this->QID[$i],intval($x)));
 		}
 		
 		$rated[$i]=true;

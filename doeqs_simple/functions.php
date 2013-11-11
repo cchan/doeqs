@@ -5,7 +5,7 @@
 require_once "conf/config.php";
 function __autoload($class_name) {//Lovely magic function, autorequires the file when you attempt to construct the class
 	//for DB qIO filetoStr qParser
-    require "classes/class.".str_replace(["/","\\"],"",$class_name).".php";
+    require "classes/class.".str_replace(array("/","\\"),"",$class_name).".php";
 }
 
 
