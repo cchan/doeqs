@@ -31,7 +31,6 @@
 		Password
 		PermissionsLevel
 */
-define("DB_DB","doeqs_simple");
 require_once "common.php";
 
 

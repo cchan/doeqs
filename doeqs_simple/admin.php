@@ -1,11 +1,9 @@
 <?php
 require "common.php";
 session_start();
-?>
-<?php
+
 if(isSet($_SESSION["admin"])||isSet($_POST["p"])&&$_POST["p"]==="supersecretstuff"){
 $_SESSION["admin"]=true;
-define("DB_DB","doeqs_simple");
 if(isSet($_POST["logout"])){
 	unset($_SESSION["admin"]);
 	die("logged out");
