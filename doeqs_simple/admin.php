@@ -1,6 +1,7 @@
 <?php
-require "common.php";
-session_start();
+require "functions.php";
+global $database;//magically registers it so that the next line won't error that $database is not defined.
+if(is_null($database))$database=new DB();
 
 if(isSet($_SESSION["admin"])||isSet($_POST["p"])&&$_POST["p"]==="supersecretstuff"){
 $_SESSION["admin"]=true;
@@ -50,9 +51,10 @@ $filesTotalSize="no idea";
 <fieldset <?php if($numberQs==0)echo "disabled";?>>
 <legend>Database</legend>
 <div>Total number of questions in database: <b><?php echo $numberQs;?></b></div>
-<input type="submit" name="truncQs" value="Delete All Questions" onclick="confirm('Are you sure?');"/><br>
-<input type="submit" name="timesViewed" value="Reset TimesVieweds" onclick="confirm('Are you sure?');"/><br>
-<input type="submit" name="ratings" value="Reset Ratings" onclick="confirm('Are you sure?');"/><br>
+<?php //Do a separate CONFIRM? page ?>
+<input type="submit" name="truncQs" value="Delete All Questions" onclick="return confirm('Are you sure?');"/><br>
+<input type="submit" name="timesViewed" value="Reset TimesVieweds" onclick="return confirm('Are you sure?');"/><br>
+<input type="submit" name="ratings" value="Reset Ratings" onclick="return confirm('Are you sure?');"/><br>
 <input type="submit" name="dbInt" value="Database Integrity Check" disabled/>
 </fieldset>
 <fieldset>

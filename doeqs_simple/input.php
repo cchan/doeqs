@@ -1,13 +1,10 @@
 <?php
-require_once "qIO.php";
-require_once "qparse.php";
-require_once "fileToStr.php";
-require_once "common.php";
-session_start();
+require_once "functions.php";
 ?>
 <link rel="stylesheet" href="style.css"/>
 <div id="main-wrapper">
 <h1>Question Entry</h1>
+<a href="index.php">Home</a><br>
 <a href="randq.php">Get Random Question</a><br>
 <br><br>
 <?php
@@ -19,25 +16,26 @@ if(isSet($_POST["ver"])&&isSet($_SESSION["ver"])&&$_POST["ver"]==$_SESSION["ver"
 			<i>We are processing your questions right now...</i><br><br>';
 		if(isSet($_POST["directentry"])){
 			$err="";
-			try{$q=new Questions([$_POST]);}
+			try{$q=new qIO([$_POST]);}
 			catch(Exception $e){$err="Error: ".$e->getMessage();}
 			
 			if($err=="")echo "Question entered successfully, with Question-ID <b>".(new Question($_POST))->getQID()."</b><br><br><br>";
 			else echo $err;
 		}
 		else{
-			if(isSet($_POST["copypaste"]))$unparsed=strParseQs($_POST["copypaste"]);
+			$qp=new qParser();
+			if(isSet($_POST["copypaste"]))$unparsed=$qp->parse($_POST["copypaste"]);
 			else{
-			var_dump($_FILES);
+				$fs=new fileToStr();
 				if(is_array($_FILES["fileupload"]["tmp_name"])){
 					foreach($_FILES["fileupload"]["tmp_name"] as $ind=>$tmp_name){
 						$name=$_FILES["fileupload"]["name"][$ind];
-						$unparsed.=strParseQs(fileToStr(["tmp_name"=>$tmp_name,"name"=>$name]));
+						$unparsed.=$qp->parse($fs->convert(["tmp_name"=>$tmp_name,"name"=>$name]));
 					}
 				}
-				else $unparsed=strParseQs(fileToStr($_FILES["fileupload"]));
+				else $unparsed=$qp->parse($fs->convert($_FILES["fileupload"]));
 			}
-			if(str_replace(array("\n","\r"," ","	"),"",$unparsed)!="")
+			if(str_replace(array("\n","\r"," ","	","_"),"",$unparsed)!="")
 				echo "<br><br>Below, in the copy-paste section, are what remains in the document after detecting all the questions we could find.<br>";
 			else echo "<br><br>No unparsed question text found (that means we got every question). Yay!";
 		}
@@ -57,9 +55,9 @@ Enter some questions:
 				<legend style="text-align:center;"><b><?php echo $qpart;?></b></legend>
 				<select name="Subject"><?php foreach($ruleSet["Subjects"] as $subjval=>$subj)echo "<option value='$subjval'>$subj</option>";?></select>
 				<select name="QisMC[<?php echo $qpartval;?>]"><?php foreach($ruleSet["QTypes"] as $typeval=>$type)echo "<option value='$typeval'>$type</option>";?></select><br>
-				<textarea name="Question[<?php echo $qpartval;?>]" placeholder="<?php echo DEFAULT_QUESTION_TEXT;?>"></textarea><br>
+				<textarea name="Question[<?php echo $qpartval;?>]" placeholder="<?php echo $DEFAULT_QUESTION_TEXT;?>"></textarea><br>
 				<div><?php foreach($ruleSet["MCChoices"] as $choiceval=>$choice)echo "<input type='radio' name='MCa[$qpartval]' value='$choiceval'/>$choice) <input type='text' name='MCChoices[$qpartval][]'/><br>";?></div>
-				ANSWER: <input type="text" name="Answer[<?php echo $qpartval;?>]" placeholder="<?php echo DEFAULT_ANSWER_TEXT;?>"/><br>
+				ANSWER: <input type="text" name="Answer[<?php echo $qpartval;?>]" placeholder="<?php echo $DEFAULT_ANSWER_TEXT;?>"/><br>
 			</fieldset>
 		<?php }?><br>
 		<input type="hidden" name="ver" value="<?php $_SESSION["ver"]=generateRandomString(20);echo $_SESSION["ver"];?>"/>
@@ -82,6 +80,7 @@ Enter some questions:
 			</ul>
 			<i>Also note that sometimes the detector will reject perfectly valid questions; try just resubmitting or moving on.</i>
 			</div>
+			<br>
 		<?php }else{?>
 			Paste it all here:<br>
 		<?php }?>

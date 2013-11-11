@@ -32,9 +32,9 @@ class DB{
 	private $con;
 	public $insert_id;
 	public function __construct($db=NULL){//All this does is to try to connect to the db, and store that con in $this->con
-		if(is_null($db))if(!defined("DB_DB"))throw new Exception("DB: no db specified");else $db=DB_DB;
-		$this->con=new MySQLi(DB_DOMAIN,DB_UNAME,DB_PASSW,DB_DB_PREFIX.$db);
-		if(!$this->con||$this->con->connect_error)throw new Exception("DB: con to DB ".DB_DB_PREFIX.$db." failed");
+		global $DB_DOMAIN,$DB_UNAME,$DB_PASSW,$DB_DB;
+		$this->con=new MySQLi($DB_DOMAIN,$DB_UNAME,$DB_PASSW,$DB_DB);
+		if(!$this->con||$this->con->connect_error)throw new Exception("DB: con to DB $DB_DB failed");
 	}
 	public function __destruct(){
 		$this->con->kill($this->con->thread_id);
@@ -78,7 +78,6 @@ class DB{
 		return $qresult->fetch_assoc();
 	}
 };
-$database=new DB();
 
 /*function elemInSQLReq($elem,$col,$table){//Checks whether a specified element is in the specified column in the specified database.
 	global $database;

@@ -1,62 +1,14 @@
 <?php
 //qIO.php
-	//class Question
-	//class QuestionSet
-	//function getQuestionSetNames()
+	//class qIO
+
 //DOCUMENTATION OF DATABASE
 /*
-	TABLE assignments (possibly deprecated?)
-		
-	TABLE doeqs --todo--implement the below table
-		QID INT NOT NULL AUTO_INCREMENT UNIQUE PRIMARY KEY
-		Subject TINYINT(1)//number from 1 to 5 => Bio, Chem, Phys, ESS, Math //make it extensible
-		TUisMC TINYINT(1)//boolean
-		TUQuestion TEXT
-		TUAnswer TEXT
-		BisMC TINYINT(1)//boolean
-		BQuestion TEXT
-		BAnswer TEXT
-		TimestampEntered DEFAULT CURRENT_TIMESTAMP
-	TABLE bugreports
-		Bug TEXT
-		System TEXT
-		HowReproduce TEXT
-		Email TEXT
-		Timestamp DEFAULT CURRENT_TIMESTAMP
-		[make sure not necessarily "NOT NULL"? Or not needed?]
-	TABLE reqlog
-		
-	TABLE users
-		Username
-		Password
-		PermissionsLevel
+--todo--
 */
-require_once "common.php";
 
 
-//randomizeArr - Randomly permute an array - yes, it works! in what amounts to O(n)!
-function randomizeArr($arr){
-	for($i=count($arr)-1;$i>0;$i--){
-		$ind=mt_rand(0,$i);//Get the index of the one to swap with.
-		$tmp=$arr[$ind];$arr[$ind]=$arr[$i];$arr[$i]=$tmp;//Swap with the last one.
-	}
-	return $arr;
-}
-
-
-
-
-define("DEFAULT_QUESTION_TEXT","Your question here...");
-define("DEFAULT_ANSWER_TEXT","Your answer here...");
-
-$ruleSet=array(
-	"Subjects"=>array("BIOLOGY","CHEMISTRY","PHYSICS","MATHEMATICS","EARTH AND SPACE SCIENCE"),//'bcpme'
-	"QTypes"=>array("Short Answer","Multiple Choice"),
-	"QParts"=>array("TOSS-UP","BONUS"),
-	"MCChoices"=>array("W","X","Y","Z"),
-);
-
-class Questions{//Does all the validation... for you! By not trusting you at all. ;)
+class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 	private $QID,$isTU,$Subject,$isMC,$Question,$MCChoices,$Answer,$Rating;
 	public function __construct(){
 		$this->QID=$this->isTU=$this->Subject=$this->isMC=$this->Question=$this->MCChoices
@@ -65,6 +17,7 @@ class Questions{//Does all the validation... for you! By not trusting you at all
 	public function add($paramsArray){//Add to the array of questions, each from array or ID.
 		global $ruleSet;
 		global $database;
+		if(is_null($database))$database=new DB();
 		
 		$RatingThreshold=-3;
 		
@@ -136,9 +89,10 @@ ORDER BY RAND() LIMIT 1";
 				$this->MCChoices[$n]=$params["MCChoices"];
 				
 				//Validity checking
+				global $DEFAULT_QUESTION_TEXT,$DEFAULT_ANSWER_TEXT;
 				if(!($this->isMC[$n]===true||$this->isMC[$n]===false))throw new Exception("Invalid question-type");
-				if($this->Question[$n]==""||$this->Question[$n]==DEFAULT_QUESTION_TEXT
-					||$this->Answer[$n]==""||$this->Answer[$n]==DEFAULT_ANSWER_TEXT)
+				if($this->Question[$n]==""||$this->Question[$n]==$DEFAULT_QUESTION_TEXT
+					||$this->Answer[$n]==""||$this->Answer[$n]==$DEFAULT_ANSWER_TEXT)
 					throw new Exception("Blank question/answer");//handle js-side too
 				
 				//Deal with MC vs SA
