@@ -33,3 +33,10 @@ occasionally (like on jongwon's) appends large string of data chars
 see QID90, "X) Their abilit Y) to synthesize hemoglobinY)The mechanism..." =>misinterpreted D:
 
 test on more browsers
+
+
+
+
+
+WAIT
+directentry fails

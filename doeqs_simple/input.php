@@ -19,7 +19,7 @@ if(isSet($_POST["ver"])&&isSet($_SESSION["ver"])&&$_POST["ver"]==$_SESSION["ver"
 			try{$q=new qIO(array($_POST));}
 			catch(Exception $e){$err="Error: ".$e->getMessage();}
 			
-			if($err=="")echo "Question entered successfully, with Question-ID <b>".(new Question($_POST))->getQID()."</b><br><br><br>";
+			if($err=="")echo "Question entered successfully, with Question-ID <b>".$q->getQID()."</b><br><br><br>";
 			else echo $err;
 		}
 		else{

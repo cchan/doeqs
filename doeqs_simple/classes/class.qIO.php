@@ -13,46 +13,62 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 	public function __construct(){
 		$this->QID=$this->isTU=$this->Subject=$this->isMC=$this->Question=$this->MCChoices
 			=$this->Answer=$this->Rating=array();
+	}
+	public function addRand($tossupbonus,$subjects){//t(ossup)/b(onus) [any and all of bcmpe]
+		global $database;
+		if(is_null($database))$database=new DB();
+		
+		$RatingThreshold=-3;
+	
+		$row=array();
+		$query="SELECT QID, isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating FROM questions WHERE Rating > %0% AND Deleted=0 AND TimesViewed IN (SELECT MIN(TimesViewed) FROM questions WHERE Deleted=0)";
+		
+		$parts=str_split($tossupbonus);sort($parts);//Sorting them so you can compare it fairly
+		if($tossupbonus!=""&&implode('',$parts)!="bt"){
+			$query.=" AND (";
+			foreach(str_split($tossupbonus) as $part){
+				if(strpos("tb",$part)===false)continue;
+				$query.="isTU=".strpos("bt",$part)." OR ";
+			}
+			$query.="0)";//'or zero' => nope nothing else
 		}
+		
+		$subjs=str_split($tossupbonus);sort($subjs);//Sorting them so you can compare it fairly
+		if($subjects!=""&&implode('',$subjs)!="bcemp"){
+			$query.=" AND (";
+			foreach(str_split($subjects) as $subj){
+				if(strpos("bcpme",$subj)===false)continue;
+				$query.="Subject=".strpos("bcpme",$subj)." OR ";
+			}
+			$query.="0)";//'or zero' => nope nothing else
+		}
+		
+		$query.=" ORDER BY RAND() LIMIT 1";
+		$row[]=$database->query_assoc($query,array($RatingThreshold));
+		
+		if(count($row)==0)throw new Exception("No questions in database.");
+		
+		foreach($row as $r){
+			$database->query_assoc("UPDATE questions SET TimesViewed=TimesViewed+1 WHERE QID=%0%",array($r["QID"]));
+			$this->QID[]=$r["QID"];
+			$this->isTU[]=$r["isTU"];
+			$this->Subject[]=$r["Subject"];
+			$this->isMC[]=$r["isMC"];
+			$this->Question[]=$r["Question"];
+			$this->MCChoices[]=array($r["MCW"],$r["MCX"],$r["MCY"],$r["MCZ"]);
+			$this->Answer[]=$r["Answer"];
+			$this->Rating[]=$r["Rating"];
+		}
+		return;
+	}
 	public function add($paramsArray){//Add to the array of questions, each from array or ID.
 		global $ruleSet;
 		global $database;
 		if(is_null($database))$database=new DB();
 		
-		$RatingThreshold=-3;
 		
 		if(is_null($paramsArray)){//Huh. No parameters. -_-
 			throw new Exception("Q: No parameters");
-		}
-		elseif($paramsArray==="rand"||$paramsArray==="randtossup"||$paramsArray==="randbonus"||$paramsArray==="randpair"){
-			$row=array();
-			$query="SELECT QID, isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating FROM questions 
-WHERE Rating > %0% AND Deleted=0
-AND TimesViewed IN (SELECT MIN(TimesViewed) FROM questions WHERE Deleted=0)
-ORDER BY RAND() LIMIT 1";
-			if($paramsArray==="randtossup")$row[]=$database->query_assoc(str_replace("WHERE","WHERE isTU=TRUE AND",$query),array($RatingThreshold));
-			else if($paramsArray==="randbonus")$row[]=$database->query_assoc(str_replace("WHERE","WHERE isTU=FALSE AND",$query),array($RatingThreshold));
-			//else if($paramsArray==="randpair"){
-			//	$row[]=$database->query_assoc(str_replace("WHERE","WHERE isTU=TRUE AND",$query),array($RatingThreshold));
-			//	$row[]=$database->query_assoc(str_replace("WHERE","WHERE isTU=FALSE AND Subject=%1% AND",$query,$row[count($row)-1]["Subject"]),array($RatingThreshold));
-			//}
-			else $row[]=$database->query_assoc($query,array($RatingThreshold));
-			
-			if(count($row)==0)throw new Exception("No questions in database.");
-			
-			
-			foreach($row as $r){
-				$database->query_assoc("UPDATE questions SET TimesViewed=TimesViewed+1 WHERE QID=%0%",array($r["QID"]));
-				$this->QID[]=$r["QID"];
-				$this->isTU[]=$r["isTU"];
-				$this->Subject[]=$r["Subject"];
-				$this->isMC[]=$r["isMC"];
-				$this->Question[]=$r["Question"];
-				$this->MCChoices[]=array($r["MCW"],$r["MCX"],$r["MCY"],$r["MCZ"]);
-				$this->Answer[]=$r["Answer"];
-				$this->Rating[]=$r["Rating"];
-			}
-			return;
 		}
 		elseif(!is_array($paramsArray)){
 			throw new Exception("Invalid input params");
@@ -160,16 +176,13 @@ ORDER BY RAND() LIMIT 1";
 		//Then just compile together. (--todo--chk xss)
 		$return="<div class='question'>";
 		$return.="[QID {$this->QID[$i]}, rating {$this->Rating[$i]}]";
-		$return.="<div style='font-weight:bold;text-align:center;'>{$ruleSet["QParts"][!$this->isTU[$i]]}</div>{$ruleSet["Subjects"][$this->Subject[$i]]} <i>{$ruleSet["QTypes"][(int)$this->isMC[$i]]}</i> ".nl2br(strip_tags($this->Question[$i]))."<br>";
+		$return.="<div style='font-weight:bold;text-align:center;'>{$ruleSet["QParts"][1-(int)$this->isTU[$i]]}</div>{$ruleSet["Subjects"][$this->Subject[$i]]} <i>{$ruleSet["QTypes"][(int)$this->isMC[$i]]}</i> ".nl2br(strip_tags($this->Question[$i]))."<br>";
 		if($this->isMC[$i])for($j=0;$j<4;$j++)$return.="<div style='font-size:0.9em;'>{$ruleSet["MCChoices"][$j]}) {$this->MCChoices[$i][$j]}</div>";
 		
 		$AnswerText=($this->isMC[$i])?$ruleSet["MCChoices"][$this->Answer[$i]].") ".$this->MCChoices[$i][$this->Answer[$i]]//MC
 				:strip_tags($this->Answer[$i]);//SA
 		if($plainans)$return.="<br>ANSWER: <b>$AnswerText</b><br>";
-		else{
-			$return.="<br>ANSWER: <span class='hiddenanswer'><span class='ans'>$AnswerText</span> <span class='hov'>[hover for answer]</span></span><br>";
-			$return.="<style type='text/css'>.hiddenanswer .hov{font-weight:bold;color:#00f;font-size:0.8em;}.hiddenanswer .ans{display:none;font-weight:bold;}.hiddenanswer:hover .ans{display:inline;}</style>";
-		}
+		else $return.="<br>ANSWER: <span class='hiddenanswer'><span class='ans'>$AnswerText</span> <span class='hov'>[hover for answer]</span></span><br>";
 		$return.="</div>";
 		return $return;
 	}
