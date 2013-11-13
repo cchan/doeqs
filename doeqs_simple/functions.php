@@ -66,7 +66,13 @@ function arrayToRanges($arr){//Converts [1,2,3,5,6,8,9,10] to "1-3, 5-6, 8-10"
 
 
 session_start();
-if((posted("ver")&&(!sessioned("ver")||$_POST["ver"]!==$_SESSION["ver"]))||!posted("ver")&&sessioned("ver"))throw new Exception("Validation Error");
+if((posted("ver")&&(!sessioned("ver")||$_POST["ver"]!==$_SESSION["ver"]))||!posted("ver")&&sessioned("ver")){
+	//dies because it sessions the vercode for verification next time around which doesn't happen when you click on a link
+	//but if remove that last cond you can just remove the "ver" field
+	//how about make this a function?
+	unset($_POST["ver"],$_SESSION["ver"]);
+	throw new Exception("Validation Error");
+}
 unset($_POST["ver"],$_SESSION["ver"]);
 //http://stackoverflow.com/questions/4356289/php-random-string-generator/15914231#15914231
 function genVerCode() {

@@ -4,13 +4,13 @@
 //function posted($postvarname1,$postvarname2,...) //Returns whether all of those are existent $_POST variables. (ie $_POST[$postvarname1],...)
 //function getted($getvarname1,$getvarname2,...) //Returns whether all of those are existent $_GET variables. (ie $_GET[$getvarname1],...)
 
-$DEBUG_MODE=true;//True if want lots of output. False on real production.
+$DEBUG_MODE=false;//True if want lots of output. False on real production.
 date_default_timezone_set("America/Toronto");//(No Boston)
 
 //pointlessbutton.xp3.biz settings are the default.
 $DB_DOMAIN = "localhost";
 $DB_UNAME = "621516";
-$DB_PASSW = "doobahead1235";
+$DB_PASSW = "dooba"."head".(5*(128*5+7)%1000+1000);
 $DB_DB = "621516";
 
 $ruleSet=array(
@@ -18,6 +18,9 @@ $ruleSet=array(
 	"QTypes"=>array("Short Answer","Multiple Choice"),
 	"QParts"=>array("TOSS-UP","BONUS"),
 	"MCChoices"=>array("W","X","Y","Z"),
+	"SubjStr"=>'bcpme',
+	"TypeStr"=>'sm',
+	"PartStr"=>'tb',
 );
 $DEFAULT_QUESTION_TEXT="Your question here...";
 $DEFAULT_ANSWER_TEXT="Your answer here...";
