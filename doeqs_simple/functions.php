@@ -7,14 +7,7 @@ function __autoload($class_name) {//Lovely magic function, autorequires the file
 	//for DB qIO filetoStr qParser
     require "classes/class.".str_replace(array("/","\\"),"",$class_name).".php";
 }
-
-
-
-
-session_start();
-function getSessionName(){
-	return "IP".$_SERVER["REMOTE_ADDR"];
-}
+$database=new DB();
 
 
 function anyIndicesEmpty($array/*, var1, var2, ...,varN*/){//it's NOT anyIndicesNull. "" is empty.
@@ -71,13 +64,20 @@ function arrayToRanges($arr){//Converts [1,2,3,5,6,8,9,10] to "1-3, 5-6, 8-10"
 	return $string;
 }
 
+
+session_start();
+if((posted("ver")&&(!sessioned("ver")||$_POST["ver"]!==$_SESSION["ver"]))||!posted("ver")&&sessioned("ver"))throw new Exception("Validation Error");
+unset($_POST["ver"],$_SESSION["ver"]);
 //http://stackoverflow.com/questions/4356289/php-random-string-generator/15914231#15914231
-function generateRandomString($length) {
+function genVerCode() {
+	$length=20;
     $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
     $randomString = '';
     for ($i = 0; $i < $length; $i++) {
         $randomString .= $characters[rand(0, strlen($characters) - 1)];
     }
+	$_SESSION["ver"]=$randomString;
     return $randomString;
 }
+
 ?>

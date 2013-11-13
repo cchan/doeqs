@@ -9,39 +9,37 @@ require_once "functions.php";
 <br><br>
 <?php
 $unparsed="";
-if(isSet($_POST["ver"])&&isSet($_SESSION["ver"])&&$_POST["ver"]==$_SESSION["ver"]){
-	unset($_SESSION["ver"]);
-	if(isSet($_POST["copypaste"])||isSet($_FILES["fileupload"])||isSet($_POST["directentry"])){
-		echo '<div style="font-size:0.8em;border:solid 1px #000000;display:inline-block;padding:5px;">
-			<i>We are processing your questions right now...</i><br><br>';
-		if(isSet($_POST["directentry"])){
-			$err="";
-			try{$q=new qIO(array($_POST));}
-			catch(Exception $e){$err="Error: ".$e->getMessage();}
-			
-			if($err=="")echo "Question entered successfully, with Question-ID <b>".$q->getQID()."</b><br><br><br>";
-			else echo $err;
-		}
-		else{
-			$qp=new qParser();
-			if(isSet($_POST["copypaste"]))$unparsed=$qp->parse($_POST["copypaste"]);
-			else{
-				$fs=new fileToStr();
-				if(is_array($_FILES["fileupload"]["tmp_name"])){
-					foreach($_FILES["fileupload"]["tmp_name"] as $ind=>$tmp_name){
-						$name=$_FILES["fileupload"]["name"][$ind];
-						$unparsed.=$qp->parse($fs->convert(array("tmp_name"=>$tmp_name,"name"=>$name)));
-					}
-				}
-				else $unparsed=$qp->parse($fs->convert($_FILES["fileupload"]));
-			}
-			if(str_replace(array("\n","\r"," ","	","_"),"",$unparsed)!="")
-				echo "<br><br>Below, in the copy-paste section, are what remains in the document after detecting all the questions we could find.<br>";
-			else echo "<br><br>No unparsed question text found (that means we got every question). Yay!";
-		}
+
+if(isSet($_POST["copypaste"])||isSet($_FILES["fileupload"])||isSet($_POST["directentry"])){
+	echo '<div style="font-size:0.8em;border:solid 1px #000000;display:inline-block;padding:5px;">
+		<i>We are processing your questions right now...</i><br><br>';
+	if(isSet($_POST["directentry"])){
+		$err="";
+		try{$q=new qIO(array($_POST));}
+		catch(Exception $e){$err="Error: ".$e->getMessage();}
 		
-		echo '</div><br><br>';
+		if($err=="")echo "Question entered successfully, with Question-ID <b>".$q->getQID()."</b><br><br><br>";
+		else echo $err;
 	}
+	else{
+		$qp=new qParser();
+		if(isSet($_POST["copypaste"]))$unparsed=$qp->parse($_POST["copypaste"]);
+		else{
+			$fs=new fileToStr();
+			if(is_array($_FILES["fileupload"]["tmp_name"])){
+				foreach($_FILES["fileupload"]["tmp_name"] as $ind=>$tmp_name){
+					$name=$_FILES["fileupload"]["name"][$ind];
+					$unparsed.=$qp->parse($fs->convert(array("tmp_name"=>$tmp_name,"name"=>$name)));
+				}
+			}
+			else $unparsed=$qp->parse($fs->convert($_FILES["fileupload"]));
+		}
+		if(str_replace(array("\n","\r"," ","	","_"),"",$unparsed)!="")
+			echo "<br><br>Below, in the copy-paste section, are what remains in the document after detecting all the questions we could find.<br>";
+		else echo "<br><br>No unparsed question text found (that means we got every question). Yay!";
+	}
+	
+	echo '</div><br><br>';
 }
 
 ?>
@@ -60,7 +58,7 @@ Enter some questions:
 				ANSWER: <input type="text" name="Answer[<?php echo $qpartval;?>]" placeholder="<?php echo $DEFAULT_ANSWER_TEXT;?>"/><br>
 			</fieldset>
 		<?php }?><br>
-		<input type="hidden" name="ver" value="<?php $_SESSION["ver"]=generateRandomString(20);echo $_SESSION["ver"];?>"/>
+		<input type="hidden" name="ver" value="<?=genVerCode();echo $_SESSION["ver"];?>"/>
 		<input type="submit" name="directentry" value="Submit Question"/>
 	</form>
 	

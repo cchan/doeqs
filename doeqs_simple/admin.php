@@ -1,7 +1,6 @@
 <?php
 require "functions.php";
 global $database;//magically registers it so that the next line won't error that $database is not defined.
-if(is_null($database))$database=new DB();
 
 if(isSet($_SESSION["admin"])||isSet($_POST["p"])&&$_POST["p"]==="supersecretstuff"){
 $_SESSION["admin"]=true;
@@ -17,9 +16,9 @@ elseif(isSet($_POST["timesViewed"])){
 	$database->query_assoc("UPDATE questions SET TimesViewed=0");
 	echo "All questions' times-viewed zeroed.<br><br>";
 }
-elseif(isSet($_POST["ratings"])){
-	$database->query_assoc("UPDATE questions SET Rating=0");
-	echo "All questions' ratings zeroed.<br><br>";
+elseif(isSet($_POST["markBad"])){
+	$database->query_assoc("UPDATE questions SET MarkBad=0");
+	echo "All questions' marked-as-bad's zeroed.<br><br>";
 }
 elseif(isSet($_POST["dbInt"])){
 //Subject in {0,1,2,3,4}
@@ -52,9 +51,9 @@ $filesTotalSize="no idea";
 <legend>Database</legend>
 <div>Total number of questions in database: <b><?php echo $numberQs;?></b></div>
 <?php //Do a separate CONFIRM? page ?>
-<input type="submit" name="truncQs" value="Delete All Questions" onclick="return confirm('Are you sure?');"/><br>
-<input type="submit" name="timesViewed" value="Reset TimesVieweds" onclick="return confirm('Are you sure?');"/><br>
-<input type="submit" name="ratings" value="Reset Ratings" onclick="return confirm('Are you sure?');"/><br>
+<input type="submit" name="truncQs" value="Delete All Questions" class="confirm"/><br>
+<input type="submit" name="timesViewed" value="Reset TimesVieweds" class="confirm"/><br>
+<input type="submit" name="markBad" value="Reset Marked-As-Bad's" class="confirm"/><br>
 <input type="submit" name="dbInt" value="Database Integrity Check" disabled/>
 </fieldset>
 <fieldset>
@@ -65,6 +64,10 @@ $filesTotalSize="no idea";
 </fieldset>
 <input type="submit" name="logout" value="Logout"/><br>
 </form>
+<script type="text/javascript">
+var c=document.getElementsByClassName("confirm");
+for(var i=0;i<c.length;i++)c[i].onclick=function(){return confirm('Are you sure you want to "'+this.value+'"?');}
+</script>
 <?php }else{?>
 <form method="POST"><input type="password" name="p"/></form>
 <?php }?>

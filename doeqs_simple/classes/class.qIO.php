@@ -10,21 +10,19 @@
 
 class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 	private $QID,$isTU,$Subject,$isMC,$Question,$MCChoices,$Answer;
-	private $hasUncommittedChanges;
 	public function __construct(){
 		$this->QID=$this->isTU=$this->Subject=$this->isMC=$this->Question=$this->MCChoices
-			=$this->Answer=$this->Rating=array();
+			=$this->Answer=array();
 	}
 	public function __destruct(){
-		foreach($QID as $id)if($id==0)throw new Exception("Uncommitted added questions.");
+		foreach($this->QID as $id)if($id==0)throw new Exception("Uncommitted added questions.");
 	}
 	public function addRand($parts,$subjects,$types){//t(ossup)/b(onus) [any and all of bcmpe]
 		global $database;
 		global $markBadThreshold;
-		if(is_null($database))$database=new DB();
 	
 		$row=array();
-		$query="SELECT QID, isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating FROM questions WHERE MarkBad < %0% AND Deleted=0 AND TimesViewed IN (SELECT MIN(TimesViewed) FROM questions WHERE MarkBad < %0% AND Deleted=0)";
+		$query="SELECT QID, isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer FROM questions WHERE MarkBad < %0% AND Deleted=0";
 		
 		$t=str_split($parts);sort($t);//Sorting them so you can compare it fairly
 		if($parts!=""&&implode('',$t)!="bt"){
@@ -54,41 +52,37 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 			$query.="0)";//'or zero' => nope nothing else
 		}
 		
-		$query.=" ORDER BY RAND() LIMIT 1";
-		$row[]=$database->query_assoc($query,array($markBadThreshold));
+		$query.=" ORDER BY TimesViewed ASC, RAND() LIMIT 1";
+		$r=$database->query_assoc($query,array($markBadThreshold));
 		
-		if(count($row)==0)throw new Exception("No questions in database.");
+		if(count($r)==0)throw new Exception("No questions.");
 		
-		foreach($row as $r){
-			$database->query_assoc("UPDATE questions SET TimesViewed=TimesViewed+1 WHERE QID=%0%",array($r["QID"]));
-			$this->QID[]=$r["QID"];
-			$this->isTU[]=$r["isTU"];
-			$this->Subject[]=$r["Subject"];
-			$this->isMC[]=$r["isMC"];
-			$this->Question[]=$r["Question"];
-			$this->MCChoices[]=array($r["MCW"],$r["MCX"],$r["MCY"],$r["MCZ"]);
-			$this->Answer[]=$r["Answer"];
-			$this->Rating[]=$r["Rating"];
-		}
+		$database->query_assoc("UPDATE questions SET TimesViewed=TimesViewed+1 WHERE QID=%0%",array($r["QID"]));
+		$this->QID[]=$r["QID"];
+		$this->isTU[]=$r["isTU"];
+		$this->Subject[]=$r["Subject"];
+		$this->isMC[]=$r["isMC"];
+		$this->Question[]=$r["Question"];
+		$this->MCChoices[]=array($r["MCW"],$r["MCX"],$r["MCY"],$r["MCZ"]);
+		$this->Answer[]=$r["Answer"];
 	}
 	public function addByQID($qid){
-		if($params!=strval(intval($params)))throw new Exception("Invalid QID.");
-		$row=$database->query_assoc("SELECT QID, isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating FROM questions WHERE QID = %0% AND Deleted=FALSE LIMIT 1",array(intval($params)));
-		if(count($row)==0)throw new Exception("Invalid QID.");
+		global $database;
+		if($qid!=strval(intval($qid)))throw new Exception("Invalid QID $qid.");
+		$row=$database->query_assoc("SELECT QID, isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer FROM questions WHERE QID = %0% AND Deleted=FALSE LIMIT 1",array(intval($qid)));
+		if(count($row)==0)throw new Exception("Invalid QID $qid.");
 		
-		$this->QID[$n]=$row["QID"];
-		$this->isTU[$n]=$row["isTU"];
-		$this->Subject[$n]=$row["Subject"];
-		$this->isMC[$n]=$row["isMC"];
-		$this->Question[$n]=$row["Question"];
-		$this->MCChoices[$n]=array($row["MCW"],$row["MCX"],$row["MCY"],$row["MCZ"]);
-		$this->Answer[$n]=$row["Answer"];
-		$this->Rating[$n]=$row["Rating"];
+		$this->QID[]=$row["QID"];
+		$this->isTU[]=$row["isTU"];
+		$this->Subject[]=$row["Subject"];
+		$this->isMC[]=$row["isMC"];
+		$this->Question[]=$row["Question"];
+		$this->MCChoices[]=array($row["MCW"],$row["MCX"],$row["MCY"],$row["MCZ"]);
+		$this->Answer[]=$row["Answer"];
 	}
-	public function addNew($paramsArray){//Add to the array of questions, each from array or ID.
+	public function addByArray($paramsArray){//Add to the array of questions, each from array or ID.
 		global $ruleSet;
 		global $database;
-		if(is_null($database))$database=new DB();
 		
 		if(is_null($paramsArray))throw new Exception("No parameters");
 		elseif(!is_array($paramsArray))throw new Exception("Invalid input params");
@@ -118,9 +112,6 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 				if(anyIndicesEmpty($this->MCChoices[$n],0,1,2,3))throw new Exception("Some multiple choice blank");
 				if(($this->Answer[$n]=strpos('wxyz',strtolower(substr(trim($this->Answer[$n]),0,1))))===false)throw new Exception("Invalid answer");
 			}
-			
-			//Start value for rating.
-			$this->Rating=0;
 			
 			//Hm. Start value for QID.
 			$this->QID[$n]=0;
@@ -168,31 +159,30 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 		//--todo--so how to do this for our php copy of the questions?
 	}
 	
-	public function toHTML($i,$plainans=true){//Return nice HTML.
+	public function toHTML($i,$ansWrap1="",$ansWrap2=""){//Return nice HTML.
 		global $ruleSet;
+		
 		//Then just compile together. (--todo--chk xss)
 		$return="<div class='question'>";
-		$return.="[QID {$this->QID[$i]}, rating {$this->Rating[$i]}]";
+		$return.="[QID {$this->QID[$i]}]";//Talk about timestampEntered, author, etc?
 		$return.="<div style='font-weight:bold;text-align:center;'>{$ruleSet["QParts"][1-(int)$this->isTU[$i]]}</div>{$ruleSet["Subjects"][$this->Subject[$i]]} <i>{$ruleSet["QTypes"][(int)$this->isMC[$i]]}</i> ".nl2br(strip_tags($this->Question[$i]))."<br>";
 		if($this->isMC[$i])for($j=0;$j<4;$j++)$return.="<div style='font-size:0.9em;'>{$ruleSet["MCChoices"][$j]}) {$this->MCChoices[$i][$j]}</div>";
 		
 		$AnswerText=($this->isMC[$i])?$ruleSet["MCChoices"][$this->Answer[$i]].") ".$this->MCChoices[$i][$this->Answer[$i]]//MC
 				:strip_tags($this->Answer[$i]);//SA
-		if($plainans)$return.="<br>ANSWER: <b>$AnswerText</b><br>";
-		else $return.="<br>ANSWER: <span class='hiddenanswer'><span class='ans'>$AnswerText</span> <span class='hov'>[hover for answer]</span></span><br>";
+		$return.=$ansWrap1.$AnswerText.$ansWrap2;
 		$return.="</div>";
 		return $return;
 	}
-	public function allToHTML($plainans=true){
+	public function allToHTML($ansWrap1="",$ansWrap2=""){
 		$ret="";
-		for($i=0;$i<count($this->QID);$i++)$ret.=$this->toHTML($i,$plainans);
+		for($i=0;$i<count($this->QID);$i++)$ret.=$this->toHTML($i,$ansWrap1,$ansWrap2);
 		return $ret;
 	}
 	
 	public function getQIDs(){return $this->QID;}
 	public function getQID($i){return $this->QID[$i];}
 	public function getSubj($i){return $this->Subject[$i];}
-	public function getRating($i){return $this->Rating[$i];}
 	
 	public function markBad($i){//Rate question.
 		global $database;

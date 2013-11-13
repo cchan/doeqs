@@ -5,7 +5,6 @@ class qParser{
 	//strParseQs - high-level question-parsing; accepts string of questions to parse, does whatever with them, and returns string of output.
 	public function parse($qstr){
 		global $database;
-		if(is_null($database))$database=new DB();
 		if($qstr===""){echo "Error: No text submitted.";return "";}
 		if(strpos($qstr,"\n")===false){echo "Needs line breaks for delineation; no questions uploaded.";return $qstr;}
 		
@@ -15,7 +14,7 @@ class qParser{
 		for($i=0;$i<$nMatches;$i++){
 			try{
 				//Indices: 0 full match, Part, Number, Subject, MCQText, ChoicesW, ChoicesX, ChoicesY, ChoicesZ, SAQText, Answer
-				$qs->add(array(array(
+				$qs->addByArray(array(array(
 					"isTU"=>strpos('bt',strtolower(substr($qtext[1][$i],0,1))),
 					"Subject"=>strpos('bcpme',strtolower(substr($qtext[3][$i],0,1))),
 					"isMC"=>$qtext[4][$i]!="",
