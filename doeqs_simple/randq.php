@@ -30,51 +30,48 @@ function keyup(e){
 <a href="input.php">Question Entry</a><br>
 <br>
 <?php
-if(posted("rate","rateid","ver")&&sessioned("ver")&&$_POST["ver"]===$_SESSION["ver"]){
-	unset($_SESSION["ver"]);
+if(posted("ver")&&(!sessioned("ver")||$_POST["ver"]!==$_SESSION["ver"]))throw new Exception("Error");
+unset($_POST["ver"],$_SESSION["ver"]);
+
+if(posted("markBad")&&$_POST["markBad"]=="1"){
 	$q=new qIO();
-	$q->add(array($_POST["rateid"]));
-	$q->rate(0,$rateval=intval($_POST["rate"]));
-	echo "<div style='font-weight:bold;font-size:0.9em;'>Voted question {$_POST["rateid"]} as {$rateval}; total rating now {$q->getRating(0)}.</div>";
+	$q->add(array($_POST["qid"]));
+	$q->markBad(0);
+	echo "<div style='font-weight:bold;font-size:0.9em;'>Marked question {$_POST["qid"]} as bad.</div>";
 	unset($q);
 }
-else echo "<br>";
-?>
+else echo "<br>";//So the alignment doesn't shift
 
-<br>
-<div id='question'>
-<?php
-$allparts="tb";$allsubjs="bcpme";
-$partstring="";$subjstring="";
 
-if(posted("parts")){
-	foreach($_POST["parts"] as $val){
-		if(strpos($allparts,$val)===false)continue;//Don't add it if it's invalid
-		if(strpos($partstring,$val)!==false)continue;//Don't add it if it's already been added
-		$partstring.=$val;
+$stuff=array("QParts"=>"tb","Subjects"=>"bcpme","QTypes"=>"sm");
+$fullname=array("QParts"=>"Question Part","Subjects"=>"Subject","QTypes"=>"Question Type");
+$string=array();
+$checkboxoptions="";
+foreach($stuff as $name=>$all){
+	$checkboxoptions.='<div><b>'.$fullname[$name].'</b>';
+	foreach(str_split($all) as $ind=>$val)
+		$checkboxoptions.='<br>'.$ruleSet[$name][$ind].'<input type="checkbox" name="'.$name.'[]" value="'.$val.'" checked="'.((!(posted($name)&&!in_array($val,$_POST[$name])))?'checked':'').'" />';
+	$checkboxoptions.='</div>';
+	if(posted($name)){
+		foreach($_POST[$name] as $val){
+			if(strpos($all,$val)===false)continue;//Don't add it if it's invalid
+			if(strpos($string[$name],$val)!==false)continue;//Don't add it if it's already been added
+			$string[$name].=$val;
+		}
 	}
+	else{$string[$name]=$all;}
 }
-else{$partstring=$allparts;}
-if(posted("subjects")){
-	foreach($_POST["subjects"] as $val){
-		if(strpos($allsubjs,$val)===false)continue;//Don't add it if it's invalid
-		if(strpos($subjstring,$val)!==false)continue;//Don't add it if it's already been added
-		$subjstring.=$val;
-	}
-}
-else{$subjstring=$allsubjs;}
 
 $Q=new qIO();
-$Q->addRand($partstring,$subjstring);
-echo $Q->allToHTML(false);
+$Q->addRand($string["QParts"],$string["Subjects"],$string["QTypes"]);
 ?>
-</div>
-<br>
+
 <form action="randq.php" method="POST" id="nextq">
-<input type="hidden" name="rateid" value="<?php echo implode(", ",$Q->getQIDs());?>"/>
-<input type="hidden" name="ver" value="<?php $_SESSION["ver"]=generateRandomString(20);echo $_SESSION["ver"];?>"/>
-<div><b>Question Part:</b> <?php foreach(str_split($allparts) as $ind=>$val)echo '<br>'.$ruleSet["QParts"][$ind].'<input type="checkbox" name="parts[]" value="'.$val.'" '.((!(posted("parts")&&!in_array($val,$_POST["parts"])))?'checked':'').' />';?></div>
-<div><b>Subject:</b> <?php foreach(str_split($allsubjs) as $ind=>$val)echo '<br>'.$ruleSet["Subjects"][$ind].'<input type="checkbox" name="subjects[]" value="'.$val.'" '.((!(posted("subjects")&&!in_array($val,$_POST["subjects"])))?'checked':'').' />';?></div>
+<div>Mark as Bad: <input type="checkbox" name="markBad" value="1" checked=""/></div>
+<div id='question'><?php echo $Q->allToHTML(false);?></div>
+<input type="hidden" name="ver" value="<?=$_SESSION["ver"]=generateRandomString(20);?>"/>
+<?php echo $checkboxoptions;?>
+<input type="hidden" name="qid" value="<?=implode(", ",$Q->getQIDs());?>"/>
 <input type="submit" value="Next"/>
 </form>
 </div>

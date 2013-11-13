@@ -25,6 +25,9 @@ $DEFAULT_ANSWER_TEXT="Your answer here...";
 /*if(file_exists(__DIR__ . "/local_config.php"))*/include "local_config.php";//If necessary, stuff will be overridden here.
 
 
+$markBadThreshold=2;//How many times a question can be marked bad before being ignored
+
+
 if(!$DEBUG_MODE){//If it's actually the production version, don't say anything about what happened.
 	ini_set('display_errors',0);
 	ini_set('error_reporting',0);

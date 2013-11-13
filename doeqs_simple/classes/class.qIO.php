@@ -9,32 +9,34 @@
 
 
 class qIO{//Does all the validation... for you! By not trusting you at all. ;)
-	private $QID,$isTU,$Subject,$isMC,$Question,$MCChoices,$Answer,$Rating;
+	private $QID,$isTU,$Subject,$isMC,$Question,$MCChoices,$Answer;
+	private $hasUncommittedChanges;
 	public function __construct(){
 		$this->QID=$this->isTU=$this->Subject=$this->isMC=$this->Question=$this->MCChoices
 			=$this->Answer=$this->Rating=array();
 	}
-	public function addRand($tossupbonus,$subjects){//t(ossup)/b(onus) [any and all of bcmpe]
+	public function __destruct(){
+		foreach($QID as $id)if($id==0)throw new Exception("Uncommitted added questions.");
+	}
+	public function addRand($parts,$subjects,$types){//t(ossup)/b(onus) [any and all of bcmpe]
 		global $database;
+		global $markBadThreshold;
 		if(is_null($database))$database=new DB();
-		
-		$RatingThreshold=-3;
 	
 		$row=array();
-		$query="SELECT QID, isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating FROM questions WHERE Rating > %0% AND Deleted=0 AND TimesViewed IN (SELECT MIN(TimesViewed) FROM questions WHERE Deleted=0)";
+		$query="SELECT QID, isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating FROM questions WHERE MarkBad < %0% AND Deleted=0 AND TimesViewed IN (SELECT MIN(TimesViewed) FROM questions WHERE MarkBad < %0% AND Deleted=0)";
 		
-		$parts=str_split($tossupbonus);sort($parts);//Sorting them so you can compare it fairly
-		if($tossupbonus!=""&&implode('',$parts)!="bt"){
+		$t=str_split($parts);sort($t);//Sorting them so you can compare it fairly
+		if($parts!=""&&implode('',$t)!="bt"){
 			$query.=" AND (";
-			foreach(str_split($tossupbonus) as $part){
+			foreach(str_split($parts) as $part){
 				if(strpos("tb",$part)===false)continue;
 				$query.="isTU=".strpos("bt",$part)." OR ";
 			}
 			$query.="0)";//'or zero' => nope nothing else
 		}
-		
-		$subjs=str_split($tossupbonus);sort($subjs);//Sorting them so you can compare it fairly
-		if($subjects!=""&&implode('',$subjs)!="bcemp"){
+		$t=str_split($subjects);sort($t);//Sorting them so you can compare it fairly
+		if($subjects!=""&&implode('',$t)!="bcemp"){
 			$query.=" AND (";
 			foreach(str_split($subjects) as $subj){
 				if(strpos("bcpme",$subj)===false)continue;
@@ -42,9 +44,18 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 			}
 			$query.="0)";//'or zero' => nope nothing else
 		}
+		$t=str_split($types);sort($t);//Sorting them so you can compare it fairly
+		if($types!=""&&implode('',$t)!="ms"){
+			$query.=" AND (";
+			foreach(str_split($types) as $type){
+				if(strpos("sm",$type)===false)continue;
+				$query.="isMC=".strpos("sm",$type)." OR ";
+			}
+			$query.="0)";//'or zero' => nope nothing else
+		}
 		
 		$query.=" ORDER BY RAND() LIMIT 1";
-		$row[]=$database->query_assoc($query,array($RatingThreshold));
+		$row[]=$database->query_assoc($query,array($markBadThreshold));
 		
 		if(count($row)==0)throw new Exception("No questions in database.");
 		
@@ -59,82 +70,68 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 			$this->Answer[]=$r["Answer"];
 			$this->Rating[]=$r["Rating"];
 		}
-		return;
 	}
-	public function add($paramsArray){//Add to the array of questions, each from array or ID.
+	public function addByQID($qid){
+		if($params!=strval(intval($params)))throw new Exception("Invalid QID.");
+		$row=$database->query_assoc("SELECT QID, isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating FROM questions WHERE QID = %0% AND Deleted=FALSE LIMIT 1",array(intval($params)));
+		if(count($row)==0)throw new Exception("Invalid QID.");
+		
+		$this->QID[$n]=$row["QID"];
+		$this->isTU[$n]=$row["isTU"];
+		$this->Subject[$n]=$row["Subject"];
+		$this->isMC[$n]=$row["isMC"];
+		$this->Question[$n]=$row["Question"];
+		$this->MCChoices[$n]=array($row["MCW"],$row["MCX"],$row["MCY"],$row["MCZ"]);
+		$this->Answer[$n]=$row["Answer"];
+		$this->Rating[$n]=$row["Rating"];
+	}
+	public function addNew($paramsArray){//Add to the array of questions, each from array or ID.
 		global $ruleSet;
 		global $database;
 		if(is_null($database))$database=new DB();
 		
+		if(is_null($paramsArray))throw new Exception("No parameters");
+		elseif(!is_array($paramsArray))throw new Exception("Invalid input params");
 		
-		if(is_null($paramsArray)){//Huh. No parameters. -_-
-			throw new Exception("Q: No parameters");
-		}
-		elseif(!is_array($paramsArray)){
-			throw new Exception("Invalid input params");
-		}
-		
-		
-		
-		$queryadd="INSERT INTO questions (Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer) VALUES ";
-		$queryarr=array();
 		foreach($paramsArray as $n=>$params){
-			if($params==strval(intval($params))){
-				$row=$database->query_assoc("SELECT QID, isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer, Rating FROM questions WHERE QID = %0% AND Deleted=FALSE LIMIT 1",array($params));
-				if(count($row)==0)throw new Exception("Invalid QID provided.");
-				
-				$this->QID[$n]=$row["QID"];
-				$this->isTU[$n]=$row["isTU"];
-				$this->Subject[$n]=$row["Subject"];
-				$this->isMC[$n]=$row["isMC"];
-				$this->Question[$n]=$row["Question"];
-				$this->MCChoices[$n]=array($row["MCW"],$row["MCX"],$row["MCY"],$row["MCZ"]);
-				$this->Answer[$n]=$row["Answer"];
-				$this->Rating[$n]=$row["Rating"];
-			}
-			elseif(is_array($params)){//Then it's (probably) being given all the needed parameters in an array.
-				$n+=count($this->QID);//"Temporary" fix. Ugly.
-				$this->isTU[$n]=$params["isTU"]==1?1:0;
+			if(!is_array($params))throw new Exception("Bad parameters");//Given all the needed parameters in an array.
+			$n+=count($this->QID);//"Temporary" fix. Ugly.
+			$this->isTU[$n]=$params["isTU"]==1?1:0;
+		
+			$this->Subject[$n]=intval($params["Subject"]);
+			if($this->Subject[$n]===false||$this->Subject[$n]>4||$this->Subject[$n]<0)throw new Exception("Invalid subject");
 			
-				$this->Subject[$n]=intval($params["Subject"]);
-				if($this->Subject[$n]===false||$this->Subject[$n]>4||$this->Subject[$n]<0)throw new Exception("Invalid subject");
-				
-				$this->isMC[$n]=(bool)$params["isMC"];
-				$this->Question[$n]=$params["Question"];
-				$this->Answer[$n]=$params["Answer"];
-				$this->MCChoices[$n]=$params["MCChoices"];
-				
-				//Validity checking
-				global $DEFAULT_QUESTION_TEXT,$DEFAULT_ANSWER_TEXT;
-				if(!($this->isMC[$n]===true||$this->isMC[$n]===false))throw new Exception("Invalid question-type");
-				if($this->Question[$n]==""||$this->Question[$n]==$DEFAULT_QUESTION_TEXT
-					||$this->Answer[$n]==""||$this->Answer[$n]==$DEFAULT_ANSWER_TEXT)
-					throw new Exception("Blank question/answer");//handle js-side too
-				
-				//Deal with MC vs SA
-				if($this->isMC[$n]){
-					if(anyIndicesEmpty($this->MCChoices[$n],0,1,2,3))throw new Exception("Some multiple choice blank");
-					if(($this->Answer[$n]=strpos('wxyz',strtolower(substr(trim($this->Answer[$n]),0,1))))===false)throw new Exception("Invalid answer");
-				}
-				
-				//Start value for rating.
-				$this->Rating=0;
-				
-				//Hm. Start value for QID.
-				$this->QID[$n]=0;
-				
-				
-				$n-=count($this->QID);
+			$this->isMC[$n]=(bool)$params["isMC"];
+			$this->Question[$n]=$params["Question"];
+			$this->Answer[$n]=$params["Answer"];
+			$this->MCChoices[$n]=$params["MCChoices"];
+			
+			//Validity checking
+			global $DEFAULT_QUESTION_TEXT,$DEFAULT_ANSWER_TEXT;
+			if(!($this->isMC[$n]===true||$this->isMC[$n]===false))throw new Exception("Invalid question-type");
+			if($this->Question[$n]==""||$this->Question[$n]==$DEFAULT_QUESTION_TEXT
+				||$this->Answer[$n]==""||$this->Answer[$n]==$DEFAULT_ANSWER_TEXT)
+				throw new Exception("Blank question/answer");//handle js-side too
+			
+			//Deal with MC vs SA
+			if($this->isMC[$n]){
+				if(anyIndicesEmpty($this->MCChoices[$n],0,1,2,3))throw new Exception("Some multiple choice blank");
+				if(($this->Answer[$n]=strpos('wxyz',strtolower(substr(trim($this->Answer[$n]),0,1))))===false)throw new Exception("Invalid answer");
 			}
-			else{
-				throw new Exception("Q: Bad parameters");
-			}
+			
+			//Start value for rating.
+			$this->Rating=0;
+			
+			//Hm. Start value for QID.
+			$this->QID[$n]=0;
+			
+			$n-=count($this->QID);
 		}
 	}
 	
 	public function commit(){
 		global $database;
-		$max_query_length=1000;//Estimated maximum query length; be safe and go well below the actual.
+		$max_query_length=10000;//Estimated maximum query length; the actual is something like 16MB but whatever
 		$i=0;//which iteration we're on.
 		$q='INSERT INTO questions (isTU, Subject, isMC, Question, MCW, MCX, MCY, MCZ, Answer) VALUES ';
 		$valarr=array();
@@ -197,18 +194,11 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 	public function getSubj($i){return $this->Subject[$i];}
 	public function getRating($i){return $this->Rating[$i];}
 	
-	public function rate($i,$x){//Rate question.
+	public function markBad($i){//Rate question.
 		global $database;
 		static $rated=array();
-		if(array_key_exists($i,$rated))return;
-		if($x!=intval($x))return;
-		//Being super-careful.
-		
-		if(intval($x)>=-1||intval($x)<=1){
-			$this->Rating[$i]+=intval($x);
-			$database->query_assoc("UPDATE questions SET Rating=Rating+%1% WHERE QID=%0% LIMIT 1",array($this->QID[$i],intval($x)));
-		}
-		
+		if(array_key_exists($i,$rated))return;//Being super-careful.
+		$database->query_assoc("UPDATE questions SET markBad=MarkBad+1 WHERE QID=%0% LIMIT 1",array($this->QID[$i]));
 		$rated[$i]=true;
 	}
 };
