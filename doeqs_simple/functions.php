@@ -66,24 +66,47 @@ function arrayToRanges($arr){//Converts [1,2,3,5,6,8,9,10] to "1-3, 5-6, 8-10"
 
 
 session_start();
-if((posted("ver")&&(!sessioned("ver")||$_POST["ver"]!==$_SESSION["ver"]))||!posted("ver")&&sessioned("ver")){
+if(sessioned("current_page"))$_SESSION["prev_page"]=$_SESSION["current_page"];
+$_SESSION["current_page"]=parse_url($_SERVER["REQUEST_URI"],PHP_URL_PATH);
+function xsrfVal(){
+	if($_SESSION["current_page"]!==$_SESSION["prev_page"]){//if it's not the right page
+		unset($_POST["ver"],$_SESSION["ver"]);
+		return false;//hmm uhhhh
+	}//uhno then it will never be able to open from an outside site
+	
+	if(posted("ver")&&sessioned("ver")&&$_POST["ver"]!==$_SESSION["ver"])
+		unset($_POST["ver"],$_SESSION["ver"]);
+	else {
+		unset($_POST["ver"],$_SESSION["ver"]);
+		error("Validation Error");
+	}
 	//dies because it sessions the vercode for verification next time around which doesn't happen when you click on a link
 	//but if remove that last cond you can just remove the "ver" field
-	//how about make this a function?
-	unset($_POST["ver"],$_SESSION["ver"]);
-	throw new Exception("Validation Error");
-}
-unset($_POST["ver"],$_SESSION["ver"]);
-//http://stackoverflow.com/questions/4356289/php-random-string-generator/15914231#15914231
-function genVerCode() {
-	$length=20;
-    $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    $randomString = '';
-    for ($i = 0; $i < $length; $i++) {
-        $randomString .= $characters[rand(0, strlen($characters) - 1)];
-    }
-	$_SESSION["ver"]=$randomString;
-    return $randomString;
+	
+	//--todo-- Exceptions are bad and messy and not being caught. They're not meant to propagate all the way up.
 }
 
+function xsrfCode(){
+	$length=rand(25,35);
+    $c = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';$cl = strlen($c);
+    $s = '';
+    for($i=0;$i<$length;$i++)$s.=$c[rand(0,$cl-1)];
+	$_SESSION["verpage"]=parse_url($_SERVER["REQUEST_URI"],PHP_URL_PATH);
+    return ($_SESSION["ver"]=$s);
+}
+
+
+if (version_compare(PHP_VERSION, '5.4.0', '>=')) {//from php.net
+  ob_start(null, 0, PHP_OUTPUT_HANDLER_STDFLAGS ^
+	PHP_OUTPUT_HANDLER_REMOVABLE);
+} else {
+  ob_start(null, 0, false);
+}
+register_shutdown_function("ob_end_flush");
+function error($description){
+	ob_clean();
+	echo "An error occurred";
+	if($DEBUG_MODE)echo ": $description";
+	die();
+}
 ?>
