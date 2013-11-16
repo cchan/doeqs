@@ -16,8 +16,8 @@ padding:10px;
 font-weight:bold;color:#00f;font-size:0.8em;
 }.hiddenanswer .ans{
 display:none;font-weight:bold;
-}.hiddenanswer:hover .ans{
+}/*.hiddenanswer:hover .ans{
 display:inline;
 }.hiddenanswer:hover .hov{
 color:transparent;
-}
+}*/

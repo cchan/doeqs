@@ -31,37 +31,18 @@ foreach($stuff as $name=>$all){
 $qText="";
 $Q=new qIO();
 try{$Q->addRand($string["QParts"],$string["Subjects"],$string["QTypes"]);}catch(Exception $e){$qText="No such questions exist.";}
-if($qText=="")$qText=$Q->allToHTML("<br>ANSWER: <span class='hiddenanswer'><span class='ans'>","</span> <span class='hov'>[hover for answer]</span></span><br>");
+if($qText=="")$qText=$Q->allToHTML("<br>ANSWER: <span class='hiddenanswer'><span class='ans'>","</span> <span class='hov'></span></span><br>");
 ?>
 <html>
 <head>
 <link rel="stylesheet" href="style.css"/>
-<script type="text/javascript">
-function keydown(e){
-	if(!e)var e=window.event;
-	if(e.keyCode==13)window.nextq.submit();//enter
-	if(e.keyCode==32){//space
-		var as=document.getElementById("question").getElementsByClassName("ans");
-		for(var i=0;i<as.length;i++)as[i].style.display="inline";
-		return false;
-	}
-}
-function keyup(e){
-	if(!e)var e=window.event;
-	if(e.keyCode==32){//space
-		var as=document.getElementById("question").getElementsByClassName("ans");
-		for(var i=0;i<as.length;i++)as[i].style.display="none";
-		return false;
-	}
-}
-</script>
 </head>
 <body onkeydown="return keydown();" onkeyup="return keyup();">
 <div id="main-wrapper">
 <h1>Random Question</h1>
 <a href="index.php">Home</a><br>
 <a href="input.php">Question Entry</a><br>
-<div>Hotkeys <span class='hiddenanswer'><span class='ans'>space to reveal answer, enter for next question</span> <span class='hov'>[hover]</span></span></div>
+<div><b>Hotkeys</b> space to reveal answer, enter for next question</div>
 <br>
 <?php if(isSet($markedBad))echo $markedBad;else echo "<br>";?>
 <form action="randq.php" method="POST" id="nextq">
@@ -73,5 +54,32 @@ function keyup(e){
 <input type="submit" value="Next"/>
 </form>
 </div>
+<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script type="text/javascript">
+function keydown(e){
+	if(!e)var e=window.event;
+	if(e.keyCode==13)window.nextq.submit();//enter
+	if(e.keyCode==32){//space
+		$("#question .ans").css("display","inline");
+		return false;
+	}
+}
+function keyup(e){
+	if(!e)var e=window.event;
+	if(e.keyCode==32){//space
+		$("#question .ans").css("display","none");
+		return false;
+	}
+}
+
+$(".hiddenanswer").click(
+	function(){
+		if($(this).children(".ans").is(':visible'))$(this).children(".hov").text("[click to show]");
+		else $(this).children(".hov").text("[click to hide]");
+		$(this).children(".ans").toggle();
+	});
+$(".hiddenanswer").children(".ans").hide();
+$(".hiddenanswer").children(".hov").text("[click to show]");
+</script>
 </body>
 </html>
