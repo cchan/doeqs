@@ -1,16 +1,10 @@
 <?php
 require_once "functions.php";
-?>
-<link rel="stylesheet" href="style.css"/>
-<div id="main-wrapper">
-<h1>Question Entry</h1>
-<a href="index.php">Home</a><br>
-<a href="randq.php">Get Random Question</a><br>
-<br><br>
-<?php
+
+
 $unparsed="";
 
-if(isSet($_POST["copypaste"])||isSet($_FILES["fileupload"])||isSet($_POST["directentry"])){
+if(csrfVerify()&&posted("copypaste")||isSet($_FILES["fileupload"])||posted("directentry")){
 	echo '<div style="font-size:0.8em;border:solid 1px #000000;display:inline-block;padding:5px;">
 		<i>We are processing your questions right now...</i><br><br>';
 	if(isSet($_POST["directentry"])){
@@ -48,6 +42,7 @@ Enter some questions:
 <div id="question-wrapper">
 	<h2>Direct Entry</h2>
 	<form id="directentry" action="input.php" method="POST" autocomplete="off">
+		<input type="hidden" name="ver" value="<?=csrfCode();?>"/>
 		<?php foreach($ruleSet["QParts"] as $qpartval=>$qpart){?>
 			<fieldset>
 				<legend style="text-align:center;"><b><?php echo $qpart;?></b></legend>
@@ -58,14 +53,13 @@ Enter some questions:
 				ANSWER: <input type="text" name="Answer[<?php echo $qpartval;?>]" placeholder="<?php echo $DEFAULT_ANSWER_TEXT;?>"/><br>
 			</fieldset>
 		<?php }?><br>
-		<input type="hidden" name="ver" value="<?=genVerCode();echo $_SESSION["ver"];?>"/>
 		<input type="submit" name="directentry" value="Submit Question"/>
 	</form>
 	
 	<h2>Copy-Paste</h2>
 	
 	<form id="copypaste" action="input.php" method="POST" autocomplete="off">
-		<input type="hidden" name="ver" value="<?php echo $_SESSION["ver"];?>"/>
+		<input type="hidden" name="ver" value="<?=csrfCode();?>"/>
 		<?php if(str_replace(array("\n","\r"," ","	"),"",$unparsed)!=""){?>
 			<div style='font-size:0.8em;'>
 			Common syntax errors include:
@@ -82,16 +76,15 @@ Enter some questions:
 		<?php }else{?>
 			Paste it all here:<br>
 		<?php }?>
-		<textarea name="copypaste" style="width:100%;height:10em;"><?php echo preg_replace('/[\r\n]+/', "\n",$unparsed);?></textarea><br>
+		<textarea name="copypaste" style="width:100%;height:10em;"><?=preg_replace('/[\r\n]+/', "\n",$unparsed);?></textarea><br>
 		<input type="submit" value="Submit Question(s)"/>
 	</form>
 	
 	<h2>File Upload</h2>
 	<form id="fileupload" action="input.php" method="POST" enctype="multipart/form-data">
-		<input type="hidden" name="ver" value="<?php echo $_SESSION["ver"];?>"/>
+		<input type="hidden" name="ver" value="<?=csrfCode();?>"/>
 		Select file to upload:
 		<input type="file" name="fileupload"><br>
 		<input type="submit" value="Upload"><br>
 	</form>
-</div>
 </div>
