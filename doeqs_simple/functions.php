@@ -85,7 +85,7 @@ function csrfCode(){
     $c = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';$cl = strlen($c);
     $s = '';
     for($i=0;$i<$length;$i++)$s.=$c[rand(0,$cl-1)];
-	$_SESSION["verpage"]=parse_url($_SERVER["REQUEST_URI"],PHP_URL_PATH);
+	$_SESSION["verpage"]=parse_url($_SERVER["SCRIPT_FILENAME"],PHP_URL_PATH);
     return ($_SESSION["ver"]=$s);
 }
 
@@ -104,8 +104,8 @@ function templateify(){
 		"randq"=>"Random Question"
 	);
 	
-	if(array_key_exists(basename($_SERVER["REQUEST_URI"],".php"),$pagesTitles))
-		$title=$pagesTitles[basename($_SERVER["REQUEST_URI"],".php")];
+	if(array_key_exists(basename($_SERVER["SCRIPT_FILENAME"],".php"),$pagesTitles))
+		$title=$pagesTitles[basename($_SERVER["SCRIPT_FILENAME"],".php")];
 	else
 		$title="Not Found";
 	

@@ -11,12 +11,12 @@ class fileToStr{
 			case "doc":	return $this->docToText($file['tmp_name']);
 			case "docx": return $this->docxToText($file['tmp_name']);
 			case "odt": return $this->odtToText($file['tmp_name']);
-			//case "pdf": return $this->pdfToText($file['tmp_name']);
+			case "pdf": return $this->pdfToText($file['tmp_name']);
 			//case "csv"://really awk case. Plus not sanitized. D:
 			//$database->query_assoc("LOAD DATA INFILE '%0%' INTO TABLE questions FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\r\n' IGNORE 1 LINES",($_FILE["file"]["tmp_name"]));
 			
 			default:
-				return "Unsupported file extension <i>$ext</i> - we currently support txt, html, doc, docx, odt.";
+				return "Unsupported file extension <i>$ext</i> - we currently support txt, html, doc, docx, odt, pdf.";
 		}
 	}
 	
@@ -48,11 +48,11 @@ class fileToStr{
 	//pdfToText()
 	//Naturally, this one doesn't work either.
 	private function pdfToText($filename){
-		require "class.pdf2text.php";//it's HUGE. Magical black box. See file for citations.
+		//The PDF2Text class is HUGE. Magical black box. See file for citations.
 		$a = new PDF2Text();
-		$a->setFilename($filename);
+		$a->setFilename($filename); 
 		$a->decodePDF();
-		return $a->output();
+		return $a->output(); 
 	}
 
 

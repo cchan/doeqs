@@ -64,7 +64,7 @@ Enter some questions:
 			<div style='font-size:0.8em;'>
 			Common syntax errors include:
 			<ul>
-			<li>a multi-line question statement,</li>
+			<li>extra line breaks or a multi-line question statement,</li>
 			<li>improperly labeled type (as "Multiple Choice" or "Short Answer" or even "Question Type"),
 			<li>missing some necessary components (like multiple choices and an answer)</li>
 			<li>mislabeled multiple choice choices</li>
@@ -76,7 +76,8 @@ Enter some questions:
 		<?php }else{?>
 			Paste it all here:<br>
 		<?php }?>
-		<textarea name="copypaste" style="width:100%;height:10em;"><?=preg_replace('/[\r\n]+/', "\n",$unparsed);?></textarea><br>
+		<textarea name="copypaste" style="width:100%;height:10em;"><?=preg_replace(['/[\r\n]+/','/[\_]+/'], ['
+',''],$unparsed);?></textarea><br>
 		<input type="submit" value="Submit Question(s)"/>
 	</form>
 	
