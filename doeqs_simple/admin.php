@@ -21,10 +21,10 @@ if(csrfVerify()&&isSet($_SESSION["admin"])||isSet($_POST["p"])&&$_POST["p"]==="s
 	}
 	elseif(isSet($_POST["dbInt"])){
 	//Subject in {0,1,2,3,4}
-	//isTU and isMC in {0,1}
+	//isB and isSA in {0,1}
 	//Question not blank or null
-	//MCs exist for all isMC=1
-	//Answer in {0,1,2,3} for isMC=1, not blank or null for isMC=0
+	//MCs exist for all isSA=1
+	//Answer in {0,1,2,3} for isSA=1, not blank or null for isSA=0
 	//Rating within reason (not below -3, since it won't even appear then)
 	//TimesViewed positive, within reason
 	//TimestampEntered within reason

@@ -5,6 +5,7 @@ class qParser{
 	//strParseQs - high-level question-parsing; accepts string of questions to parse, does whatever with them, and returns string of output.
 	public function parse($qstr){
 		global $database;
+		global $ruleSet;
 		if($qstr===""){echo "Error: No text submitted.";return "";}
 		if(strpos($qstr,"\n")===false){echo "Needs line breaks for delineation; no questions uploaded.";return $qstr;}
 		
@@ -15,10 +16,10 @@ class qParser{
 			try{
 				//Indices: 0 full match, Part, Number, Subject, MCQText, ChoicesW, ChoicesX, ChoicesY, ChoicesZ, SAQText, Answer
 				$qs->addByArray(array(array(
-					"isTU"=>strpos('bt',strtolower(substr($qtext[1][$i],0,1))),
-					"Subject"=>strpos('bcpme',strtolower(substr($qtext[3][$i],0,1))),
-					"isMC"=>$qtext[4][$i]!="",
-					"Question"=>str_replace('\n','',$qtext[4][$i].$qtext[9][$i]),
+					"isB"=>strpos('tb',strtolower(substr($qtext[1][$i],0,1))),//--todo-- THIS IS A BIG PROBLEM.
+					"Subject"=>array_search(strtolower(substr($qtext[3][$i],0,1)),$ruleSet["SubjChars"]),//--todo-- THIS IS A PROBLEM.
+					"isSA"=>$qtext[4][$i]=="",
+					"Question"=>str_replace(["\r","\n"],"",$qtext[4][$i].$qtext[9][$i]),//:O IMPORTANT: single quotes do not escape \n etc!
 					"MCChoices"=>array($qtext[5][$i],$qtext[6][$i],$qtext[7][$i],$qtext[8][$i]),
 					"Answer"=>$qtext[10][$i],
 					"MCa"=>strpos('wxyz',strtolower(substr(trim($qtext[10][$i]),0,1))),

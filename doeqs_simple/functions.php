@@ -68,7 +68,7 @@ function arrayToRanges($arr){//Converts [1,2,3,5,6,8,9,10] to "1-3, 5-6, 8-10"
 
 session_start();
 function csrfVerify(){//Just returns whether to proceed.
-	if(posted("ver")&&sessioned("ver")&&$_POST["ver"]!==$_SESSION["ver"]){
+	if(posted("ver")&&sessioned("ver")&&$_POST["ver"]===$_SESSION["ver"]){
 		unset($_POST["ver"],$_SESSION["ver"]);
 		return true;
 	}
@@ -81,7 +81,7 @@ function csrfVerify(){//Just returns whether to proceed.
 function csrfCode(){
 	static $code="";
 	if($code!==""&&$code===$_SESSION["ver"])return $code;
-	$length=rand(25,35);
+	$length=rand(32,48);
     $c = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';$cl = strlen($c);
     $s = '';
     for($i=0;$i<$length;$i++)$s.=$c[rand(0,$cl-1)];

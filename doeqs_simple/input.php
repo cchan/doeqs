@@ -12,7 +12,7 @@ if(csrfVerify()&&posted("copypaste")||isSet($_FILES["fileupload"])||posted("dire
 		try{$q=new qIO(array($_POST));}
 		catch(Exception $e){$err="Error: ".$e->getMessage();}
 		
-		if($err=="")echo "Question entered successfully, with Question-ID <b>".$q->getQID()."</b><br><br><br>";
+		if($err=="")echo "Question entered successfully, with Question-ID <b>".$q->getQID(0)."</b><br><br><br>";
 		else echo $err;
 	}
 	else{
@@ -47,7 +47,7 @@ Enter some questions:
 			<fieldset>
 				<legend style="text-align:center;"><b><?php echo $qpart;?></b></legend>
 				<select name="Subject"><?php foreach($ruleSet["Subjects"] as $subjval=>$subj)echo "<option value='$subjval'>$subj</option>";?></select>
-				<select name="QisMC[<?php echo $qpartval;?>]"><?php foreach($ruleSet["QTypes"] as $typeval=>$type)echo "<option value='$typeval'>$type</option>";?></select><br>
+				<select name="QisSA[<?php echo $qpartval;?>]"><?php foreach($ruleSet["QTypes"] as $typeval=>$type)echo "<option value='$typeval'>$type</option>";?></select><br>
 				<textarea name="Question[<?php echo $qpartval;?>]" placeholder="<?php echo $DEFAULT_QUESTION_TEXT;?>"></textarea><br>
 				<div><?php foreach($ruleSet["MCChoices"] as $choiceval=>$choice)echo "<input type='radio' name='MCa[$qpartval]' value='$choiceval'/>$choice) <input type='text' name='MCChoices[$qpartval][]'/><br>";?></div>
 				ANSWER: <input type="text" name="Answer[<?php echo $qpartval;?>]" placeholder="<?php echo $DEFAULT_ANSWER_TEXT;?>"/><br>

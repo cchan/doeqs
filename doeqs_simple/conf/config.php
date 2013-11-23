@@ -14,13 +14,13 @@ $DB_PASSW = "dooba"."head".(5*(128*5+7)%1000+1000);
 $DB_DB = "621516";
 
 $ruleSet=array(
-	"Subjects"=>array("BIOLOGY","CHEMISTRY","PHYSICS","MATHEMATICS","EARTH AND SPACE SCIENCE"),//'bcpme'
-	"QTypes"=>array("Short Answer","Multiple Choice"),
+	"Subjects"=>array("BIOLOGY","CHEMISTRY","PHYSICS","MATHEMATICS","EARTH AND SPACE SCIENCE"),
+	"QTypes"=>array("Multiple Choice","Short Answer"),
 	"QParts"=>array("TOSS-UP","BONUS"),
 	"MCChoices"=>array("W","X","Y","Z"),
-	"SubjStr"=>'bcpme',
-	"TypeStr"=>'sm',
-	"PartStr"=>'tb',
+	"SubjChars"=>str_split('bcpme'),
+	"TypeChars"=>str_split('sm'),
+	"PartChars"=>str_split('tb'),
 );
 $DEFAULT_QUESTION_TEXT="Your question here...";
 $DEFAULT_ANSWER_TEXT="Your answer here...";
