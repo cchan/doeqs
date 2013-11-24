@@ -1,23 +1,23 @@
 <?php
 require "functions.php";
 
-if(csrfVerify()&&isSet($_SESSION["admin"])||isSet($_POST["p"])&&$_POST["p"]==="supersecretstuff"){
+if(isSet($_SESSION["admin"])||(csrfVerify()&&(isSet($_POST["p"])&&$_POST["p"]==="supersecretstuff"))){
 	$_SESSION["admin"]=true;
 	if(isSet($_POST["logout"])){
-		unset($_SESSION["admin"]);
+		session_total_destroy();
 		die("logged out");
 	}
 	elseif(isSet($_POST["truncQs"])){
 		$database->query_assoc("TRUNCATE TABLE questions");
-		echo "Table <i>questions</i> truncated.<br><br>";
+		echo "All questions erased.<br><br>";
 	}
 	elseif(isSet($_POST["timesViewed"])){
 		$database->query_assoc("UPDATE questions SET TimesViewed=0");
-		echo "All questions' times-viewed zeroed.<br><br>";
+		echo "All questions' times-viewed-s zeroed.<br><br>";
 	}
 	elseif(isSet($_POST["markBad"])){
 		$database->query_assoc("UPDATE questions SET MarkBad=0");
-		echo "All questions' marked-as-bad's zeroed.<br><br>";
+		echo "All questions' marked-as-bad-s zeroed.<br><br>";
 	}
 	elseif(isSet($_POST["dbInt"])){
 	//Subject in {0,1,2,3,4}
@@ -37,18 +37,22 @@ if(csrfVerify()&&isSet($_SESSION["admin"])||isSet($_POST["p"])&&$_POST["p"]==="s
 	//verifies nonexistence of any other files
 	}
 	
-	$numberQs=$database->query_assoc("SELECT COUNT(*) AS nQs FROM questions");$numberQs=$numberQs["nQs"];
+	$q=$database->query("SELECT Subject, COUNT(*) AS nQs FROM questions GROUP BY Subject");
+	$subjN=array();
+	$totalN=0;
+	while($r=$q->fetch_assoc())$totalN+=($subjN[$r["Subject"]]=$r["nQs"]);
 
 	$filesTotalSize="no idea";
 	//calculated thru system commands or something? Since if just tabulates directory doesn't count tmp files and such
 	?>
-
-	<h2>Admin! Shh</h2><a href="input.php">Question Entry</a><br>
+<form action="admin.php" method="POST">
+	<h2>Admin! Shh</h2>
+	<h4>Remember to log out!</h4>
 	<input type="hidden" name="ver" value="<?=csrfCode();?>"/>
-	<fieldset <?php if($numberQs==0)echo "disabled";?>>
+	<fieldset <?php if($totalN==0)echo "disabled";?>>
 		<legend>Database</legend>
-		<div>Total number of questions in database: <b><?php echo $numberQs;?></b></div>
-		<?php //Do a separate CONFIRM? page ?>
+		<div>Number of questions in database (<b>total <?=$totalN;?></b>): <?php foreach($subjN as $i=>$n)echo "<br>{$ruleSet["Subjects"][$i]}: <b>$n</b>";?></div>
+		<?php //Do a separate CONFIRM page ?>
 		<input type="submit" name="truncQs" value="Delete All Questions" class="confirm"/><br>
 		<input type="submit" name="timesViewed" value="Reset TimesVieweds" class="confirm"/><br>
 		<input type="submit" name="markBad" value="Reset Marked-As-Bad's" class="confirm"/><br>
@@ -66,6 +70,7 @@ if(csrfVerify()&&isSet($_SESSION["admin"])||isSet($_POST["p"])&&$_POST["p"]==="s
 	var c=document.getElementsByClassName("confirm");
 	for(var i=0;i<c.length;i++)c[i].onclick=function(){return confirm('Are you sure you want to "'+this.value+'"?');}
 	</script>
+</form>
 <?php }else{?>
 	<form action="admin.php" method="POST"><input type="hidden" name="ver" value="<?=csrfCode();?>"/><input type="password" name="p"/></form>
 <?php }?>

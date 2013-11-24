@@ -66,22 +66,52 @@ function arrayToRanges($arr){//Converts [1,2,3,5,6,8,9,10] to "1-3, 5-6, 8-10"
 }
 
 
+
+
+function session_total_destroy(){//Destroys a session according to the php.net method.
+	// Unset all of the session variables.
+	$_SESSION = array();
+
+	// If it's desired to kill the session, also delete the session cookie.
+	// Note: This will destroy the session, and not just the session data!
+	if (ini_get("session.use_cookies")) {
+		$params = session_get_cookie_params();
+		setcookie(session_name(), '', time() - 42000,
+			$params["path"], $params["domain"],
+			$params["secure"], $params["httponly"]
+		);
+	}
+
+	// Finally, destroy the session.
+	session_destroy();
+}
 session_start();
-function csrfVerify(){//Just returns whether to proceed.
-	if(posted("ver")&&sessioned("ver")&&$_POST["ver"]===$_SESSION["ver"]){
+if (!isset($_SESSION['LAST_ACTIVITY']) || (time() - $_SESSION['LAST_ACTIVITY'] > $SESSION_TIMEOUT_MINUTES*60)) {// last request was more than 15 minutes ago
+	session_total_destroy();
+	session_start();
+}
+$_SESSION['LAST_ACTIVITY'] = time(); // update last activity time stamp
+
+
+
+
+function csrfVerify(){//Checks CSRF code validity, and returns whether to proceed. The return value is static.
+	static $valid=NULL;
+	if(is_null($valid)){
+		if(posted("ver")&&sessioned("ver")&&$_POST["ver"]===$_SESSION["ver"]){
+			unset($_POST["ver"],$_SESSION["ver"]);
+			$valid=true;
+		}
+		else $valid=false;
 		unset($_POST["ver"],$_SESSION["ver"]);
-		return true;
 	}
-	else {
-		unset($_POST["ver"],$_SESSION["ver"]);
-		return false;
-	}
+	return $valid;
 	//--todo-- Exceptions are bad and messy and not being caught. They're not meant to propagate all the way up.
 }
-function csrfCode(){
+function csrfCode(){//Returns randomly generated CSRF code. The return value is static.
 	static $code="";
 	if($code!==""&&$code===$_SESSION["ver"])return $code;
-	$length=rand(32,48);
+	$length=rand(48,64);
     $c = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';$cl = strlen($c);
     $s = '';
     for($i=0;$i<$length;$i++)$s.=$c[rand(0,$cl-1)];

@@ -24,11 +24,15 @@ $ruleSet=array(
 );
 $DEFAULT_QUESTION_TEXT="Your question here...";
 $DEFAULT_ANSWER_TEXT="Your answer here...";
+$RANDQ_MAX_QUESTIONS_AT_ONCE=10;//How many questions can you fetch per pageload?
+$MARK_AS_BAD_THRESHOLD=2;//How many times can a question can be marked bad until being ignored?
+$SESSION_TIMEOUT_MINUTES=15;
+$DEFAULT_NUMQS=5;
 
-/*if(file_exists(__DIR__ . "/local_config.php"))*/include "local_config.php";//If necessary, stuff will be overridden here.
+//--todo--max requests per minute
 
 
-$markBadThreshold=2;//How many times a question can be marked bad before being ignored
+if(file_exists("conf/local_config.php"))include "local_config.php";//If necessary, stuff will be overridden here.
 
 
 if(!$DEBUG_MODE){//If it's actually the production version, don't say anything about what happened.
@@ -48,6 +52,5 @@ else{
 		die("An error occurred: Error #(".$errno."): '".$errstr."' in file ".$errfile." on line ".$errline);
 	}
 	set_error_handler('tell',E_ALL);
-
 }
 ?>

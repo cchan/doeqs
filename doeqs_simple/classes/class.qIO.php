@@ -17,14 +17,14 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 	public function __destruct(){
 		foreach($this->QID as $id)if($id==0)throw new Exception("Uncommitted added questions.");
 	}
-	public function addRand($parts,$subjects,$types){//arrays of the numbers to include eg subj [0,1,4] for b,c,e
-		global $database;
-		global $markBadThreshold;
-		global $ruleSet;
-	
-		$row=array();
-		$query="SELECT QID, isB, Subject, isSA, Question, MCW, MCX, MCY, MCZ, Answer FROM questions WHERE MarkBad < %0% AND Deleted=0";
+	public function addRand($parts,$subjects,$types,$num){//arrays of the numbers to include eg subj [0,1,4] for b,c,e
+		global $database, $MARK_AS_BAD_THRESHOLD, $ruleSet, $RANDQ_MAX_QUESTIONS_AT_ONCE;
 		
+		if(!is_numeric($num)||!($num=intval($num)))$num=$DEFAULT_NUMQS;
+		if($num<1)$num=1;
+		if($num>$RANDQ_MAX_QUESTIONS_AT_ONCE)$num=$RANDQ_MAX_QUESTIONS_AT_ONCE;
+		
+		$query="SELECT QID FROM questions WHERE MarkBad < $MARK_AS_BAD_THRESHOLD AND Deleted=0";
 		$stuff=array("QParts"=>$parts,"Subjects"=>$subjects,"QTypes"=>$types);
 		$counts=array("QParts"=>count($ruleSet["QParts"]),"Subjects"=>count($ruleSet["Subjects"]),"QTypes"=>count($ruleSet["QTypes"]));
 		$dbname=array("QParts"=>"isB","Subjects"=>"Subject","QTypes"=>"isSA");
@@ -40,35 +40,42 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 			}
 		}
 		
-		//NOTE that TimesViewed is across everyone, and if you have something like 2 10 10 10, you'll get the 2 at least 8 times in a row.
+		//NOTE that TimesViewed is despite categories, and if you have something like 2 10 10 10, you'll get the 2 at least 8 times in a row.
 			//The assumption that there is a large pool for _each_ possible classification (2*5*2=20 of them) eliminates this problem.
-		$query.=" ORDER BY TimesViewed ASC, RAND() LIMIT 1";//Order by TimesViewed, and then randomize within each TimesViewed value.
-		$r=$database->query_assoc($query,array($markBadThreshold));
+		$query.=" ORDER BY TimesViewed ASC, RAND() LIMIT $num";//Order by TimesViewed, and then randomize within each TimesViewed value.
+		$result=$database->query($query);
+		$QIDs=array();
+		while($r=$result->fetch_assoc())$QIDs[]=$r["QID"];
 		
-		if(count($r)==0)throw new Exception("No questions.");
-		
-		$database->query_assoc("UPDATE questions SET TimesViewed=TimesViewed+1 WHERE QID=%0%",array($r["QID"]));
-		$this->QID[]=$r["QID"];
-		$this->isB[]=$r["isB"];
-		$this->Subject[]=$r["Subject"];
-		$this->isSA[]=$r["isSA"];
-		$this->Question[]=$r["Question"];
-		$this->MCChoices[]=array($r["MCW"],$r["MCX"],$r["MCY"],$r["MCZ"]);
-		$this->Answer[]=$r["Answer"];
+		if($result->num_rows==0)return "No such questions exist.";
+		$this->addByQID($QIDs);
+		if($result->num_rows!=$num)return "More questions requested than such questions exist.";
 	}
-	public function addByQID($qid){
+	public function addByQID($qids){
 		global $database;
-		if($qid!=strval(intval($qid)))throw new Exception("Invalid QID $qid.");
-		$row=$database->query_assoc("SELECT QID, isB, Subject, isSA, Question, MCW, MCX, MCY, MCZ, Answer FROM questions WHERE QID = %0% AND Deleted=FALSE LIMIT 1",array(intval($qid)));
-		if(count($row)==0)throw new Exception("Invalid QID $qid.");
 		
-		$this->QID[]=$row["QID"];
-		$this->isB[]=$row["isB"];
-		$this->Subject[]=$row["Subject"];
-		$this->isSA[]=$row["isSA"];
-		$this->Question[]=$row["Question"];
-		$this->MCChoices[]=array($row["MCW"],$row["MCX"],$row["MCY"],$row["MCZ"]);
-		$this->Answer[]=$row["Answer"];
+		$query="SELECT QID, isB, Subject, isSA, Question, MCW, MCX, MCY, MCZ, Answer FROM questions WHERE (";
+		foreach($qids as $i=>$qid){
+			if(!(is_numeric($qid)&&$qid==intval($qid)&&intval($qid)>0))throw new Exception("Invalid QID $qid.");
+			$qid=intval($qid);
+			$query.=" QID=".intval($qid)." OR ";
+		}
+		$query.=" 0) AND Deleted=FALSE LIMIT ".count($qids);
+		
+		$this->updateQIDs($qids,"TimesViewed=TimesViewed+1");
+		
+		$result=$database->query($query);
+		if($result->num_rows<count($qids))throw new Exception("QIDs do not exist.");
+		
+		while($row=$result->fetch_assoc()){
+			$this->QID[]=$row["QID"];
+			$this->isB[]=$row["isB"];
+			$this->Subject[]=$row["Subject"];
+			$this->isSA[]=$row["isSA"];
+			$this->Question[]=$row["Question"];
+			$this->MCChoices[]=array($row["MCW"],$row["MCX"],$row["MCY"],$row["MCZ"]);
+			$this->Answer[]=$row["Answer"];
+		}
 	}
 	public function addByArray($paramsArray){//Add to the array of questions, each from array or ID.
 		global $ruleSet;
@@ -79,7 +86,7 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 		
 		foreach($paramsArray as $n=>$params){
 			if(!is_array($params))throw new Exception("Bad parameters");//Given all the needed parameters in an array.
-			$n+=count($this->QID);//"Temporary" fix. Ugly.
+			$n+=count($this->QID);//"Temporary" fix. Ugly. --todo-- what does this even do??
 			$this->isB[$n]=$params["isB"]==1?1:0;
 		
 			$this->Subject[$n]=intval($params["Subject"]);
@@ -105,8 +112,6 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 			
 			//Hm. Start value for QID.
 			$this->QID[$n]=0;
-			
-			$n-=count($this->QID);
 		}
 	}
 	
@@ -149,40 +154,81 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 		//--todo--so how to do this for our php copy of the questions?
 	}
 	
-	public function toHTML($i,$ansWrap1="",$ansWrap2=""){//Return nice HTML.
+	public function toHTML($i,$formatstr){//Return nice HTML for question $i, based on $formatstr replacements.
 		global $ruleSet;
+		$MCOptions='';
+		if(!$this->isSA[$i])
+			foreach($ruleSet["MCChoices"] as $n=>$letter)
+			$MCOptions.='<div>'.$letter.") ".$this->MCChoices[$i][$n].'</div>';
+		return str_replace(
+			array(
+				"%N%",
+				"%QID%",
+				"%PART%",
+				"%SUBJECT%",
+				"%TYPE%",
+				"%QUESTION%",
+				"%MCOPTIONS%",
+				"%ANSWER%"
+			),
+			array(
+				$i,
+				$this->QID[$i],
+				$ruleSet["QParts"][1-intval($this->isB[$i])],
+				$ruleSet["Subjects"][intval($this->Subject[$i])],
+				$ruleSet["QTypes"][intval($this->isSA[$i])],
+				nl2br(strip_tags($this->Question[$i])),
+				$MCOptions,
+				($this->isSA[$i])?strip_tags($this->Answer[$i]):$ruleSet["MCChoices"][$this->Answer[$i]].") ".$this->MCChoices[$i][$this->Answer[$i]]
+			),
+			$formatstr);
 		
-		//Then just compile together. (--todo--chk xss)
-		$return="<div class='question'>";
-		$return.="[QID {$this->QID[$i]}]";//Talk about timestampEntered, author, etc?
-		$return.="<div style='font-weight:bold;text-align:center;'>{$ruleSet["QParts"][1-(int)$this->isB[$i]]}</div>{$ruleSet["Subjects"][$this->Subject[$i]]} <i>{$ruleSet["QTypes"][(int)$this->isSA[$i]]}</i> ".nl2br(strip_tags($this->Question[$i]))."<br>";
-		if(!$this->isSA[$i])for($j=0;$j<4;$j++)$return.="<div style='font-size:0.9em;'>{$ruleSet["MCChoices"][$j]}) {$this->MCChoices[$i][$j]}</div>";
-		
-		$AnswerText=(!$this->isSA[$i])?$ruleSet["MCChoices"][$this->Answer[$i]].") ".$this->MCChoices[$i][$this->Answer[$i]]//MC
-				:strip_tags($this->Answer[$i]);//SA
-		$return.=$ansWrap1.$AnswerText.$ansWrap2;
-		$return.="</div>";
-		return $return;
+		//--todo--test xss
 	}
-	public function allToHTML($ansWrap1="",$ansWrap2=""){
+	public function allToHTML($formatstr){//Return nice HTML
 		$ret="";
-		for($i=0;$i<count($this->QID);$i++)$ret.=$this->toHTML($i,$ansWrap1,$ansWrap2);
+		for($i=0;$i<count($this->QID);$i++)$ret.=$this->toHTML($i,$formatstr);
 		return $ret;
 	}
 	
 	public function getQIDs(){return $this->QID;}
 	public function getQID($i){return $this->QID[$i];}
-	public function getSubj($i){return $this->Subject[$i];}
 	
 	public function error(){}//returns error state
 	public function count(){return count($this->QID);}
 	
-	public function markBad($i){//Rate question.
+	public function markBad($i=-1){//Rate question $i. Default rate all.
 		global $database;
 		static $rated=array();
+		
+		if($i===-1){//Default action: update ALL.
+			$range=range(0,count($this->QID)-1);
+			$this->updateIs(array_diff($range,$rated),"MarkBad=MarkBad+1");
+			$rated=$range;
+			return;
+		}
+		
 		if(array_key_exists($i,$rated))return;//Being super-careful.
-		$database->query_assoc("UPDATE questions SET markBad=MarkBad+1 WHERE QID=%0% LIMIT 1",array($this->QID[$i]));
+			$database->query_assoc("UPDATE questions SET markBad=MarkBad+1 WHERE QID=%0% LIMIT 1",array($this->QID[$i]));
 		$rated[$i]=true;
+	}
+	private function updateQIDs($qids,$setstr){
+		//$setstr is risky.
+		global $database;
+		$wherestr="";
+		foreach($qids as $qid)
+			$wherestr.=" QID=".$qid." OR ";
+		$query="UPDATE questions SET ".$setstr." WHERE (".substr($wherestr,0,-3).") LIMIT ".count($this->QID);
+		$database->query_assoc($query);
+	}
+	private function updateIs($is,$setstr){
+		//$setstr is risky.
+		global $database;
+		$wherestr="";
+		foreach($is as $i)
+			$wherestr.=" QID=".$this->QID[$i]." OR ";
+		$query="UPDATE questions SET ".$setstr." WHERE (".substr($wherestr,0,-3).") LIMIT ".count($this->QID);
+		$database->query_assoc($query);
 	}
 };
 function getExportSize(){
