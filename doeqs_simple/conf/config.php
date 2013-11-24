@@ -4,6 +4,8 @@
 //function posted($postvarname1,$postvarname2,...) //Returns whether all of those are existent $_POST variables. (ie $_POST[$postvarname1],...)
 //function getted($getvarname1,$getvarname2,...) //Returns whether all of those are existent $_GET variables. (ie $_GET[$getvarname1],...)
 
+$VERSION_NUMBER="0.2";
+
 $DEBUG_MODE=false;//True if want lots of output. False on real production.
 date_default_timezone_set("America/Toronto");//(No Boston)
 
@@ -28,6 +30,14 @@ $RANDQ_MAX_QUESTIONS_AT_ONCE=10;//How many questions can you fetch per pageload?
 $MARK_AS_BAD_THRESHOLD=2;//How many times can a question can be marked bad until being ignored?
 $SESSION_TIMEOUT_MINUTES=15;
 $DEFAULT_NUMQS=5;
+
+
+$pagesTitles=array(
+	"index"=>"Home",
+	"input"=>"Question Entry",
+	"randq"=>"Random Question",
+	"about"=>"About"
+);
 
 //--todo--max requests per minute
 

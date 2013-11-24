@@ -43,3 +43,14 @@ display:inline;
 }body.noJQuery .hiddenanswer:hover .hov{
 color:transparent;
 }
+
+#footer{
+width:60%;min-width:450px;
+margin-left:auto;margin-right:auto;
+margin-top:10px;
+color:#FFFFFF;
+background-color:#000000;
+text-align:center;
+font-weight:bold;
+border-radius:5px;
+}

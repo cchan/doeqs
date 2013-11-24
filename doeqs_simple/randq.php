@@ -36,6 +36,7 @@ $checkboxoptions.='<b>Number of Questions</b> (max '.$RANDQ_MAX_QUESTIONS_AT_ONC
 <input type="hidden" name="ver" value="<?=csrfCode();?>"/><?php //can just copy code to submit any invalid request ?>
 <div id='options'>
 <?php echo $checkboxoptions;?>
+<br><input type="submit" value="Next"/>
 </div>
 <div id='questions'>
 <?php
@@ -56,7 +57,7 @@ HEREDOC
 );
 ?>
 </div>
-<input type="submit" value="Next"/>
+<br><input type="submit" value="Next"/>
 </form>
 <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 <script type="text/javascript">

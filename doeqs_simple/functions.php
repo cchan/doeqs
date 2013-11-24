@@ -8,7 +8,7 @@ function __autoload($class_name) {//Lovely magic function, autorequires the file
     require "classes/class.".str_replace(array("/","\\"),"",$class_name).".php";
 }
 $database=new DB;
-$mobileDetect=new Mobile_Detect;
+//$mobileDetect=new Mobile_Detect; //I don't know.
 
 
 function anyIndicesEmpty($array/*, var1, var2, ...,varN*/){//it's NOT anyIndicesNull. "" is empty.
@@ -128,11 +128,7 @@ if (version_compare(PHP_VERSION, '5.4.0', '>=')) {//from php.net
 }
 //register_shutdown_function("ob_end_flush");//is it already registered automatically? gets weird error
 function templateify(){
-	$pagesTitles=array(
-		"index"=>"Home",
-		"input"=>"Question Entry",
-		"randq"=>"Random Question"
-	);
+	global $pagesTitles;
 	
 	if(array_key_exists(basename($_SERVER["SCRIPT_FILENAME"],".php"),$pagesTitles))
 		$title=$pagesTitles[basename($_SERVER["SCRIPT_FILENAME"],".php")];
@@ -147,7 +143,11 @@ function templateify(){
 		$nav.="<a href='$p.php'>$t</a>&nbsp;&middot;&nbsp;";
 	$nav.="]";
 	
-	echo str_replace(["%title%","%content%","%nav%"],[$title,$content,$nav],file_get_contents(__DIR__."\html_template.html"));
+	ob_start();
+	require(__DIR__."\html_template.php");
+	$template=ob_end_clean();
+	
+	echo str_replace(["%title%","%content%","%nav%"],[$title,$content,$nav],);
 	ob_flush();
 	flush();
 }
