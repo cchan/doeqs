@@ -1,7 +1,7 @@
 <html>
 <head>
 <link rel="stylesheet" href="style.css"/>
-<title>%title% | DOE Question Database <?php echo $VERSION_NUMBER;?></title>
+<title>%title% | DOE Question Database %version%</title>
 </head>
 <body class="noJQuery">
 <a name="top"></a>

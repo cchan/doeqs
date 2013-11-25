@@ -79,7 +79,8 @@ class DB{
 	}
 };
 
-/*function elemInSQLReq($elem,$col,$table){//Checks whether a specified element is in the specified column in the specified database.
+/*Permanently deprecated. Vestigial code for reference. Do NOT restore.
+function elemInSQLReq($elem,$col,$table){//Checks whether a specified element is in the specified column in the specified database.
 	global $database;
 	
 	if(preg_match(DB_COL_REGEX,$col)===0)throw new Exception("eleminsqlreq: invalid col");
@@ -87,8 +88,7 @@ class DB{
 	
 	return count($database->query_assoc("SELECT sum(case when %1%=%2% then 1 else 0 end) AS count FROM %0%",[$table,$col,$elem]))>0;
 	//Select all from $table where value of $col is $elem. //If there's one or more rows, it is in the column.
-}*/
-/*Permanently deprecated. Vestigial code for reference. Do NOT restore.
+}
 function getSQLRowByID($idval,$col,$table){//Get row by *numeric* ID
 	if(!ctype_digit(strval($idval)))throw new Exception("getsqlrowbyid: non-integer id");//--todo-- all $_GET/$_POST variables are STRINGS. Make sure typetesting with ctype_digit.
 	if(preg_match(DB_COL_REGEX,$col)===0)throw new Exception("getsqlrowbyid: invalid col");
@@ -100,6 +100,7 @@ function getSQLRowByID($idval,$col,$table){//Get row by *numeric* ID
 	if($qresult->num_rows>1)throw new Exception("getsqlrowbyid: more than one row with that id");
 	if($arr=$qresult->fetch_array())return $arr;//Returns the first (and presumably only) item as enumerated AND associative array. (meaning, size is doubled)
 	throw new Exception("getsqlrowbyid: failed fetch array");//(Only if there actually _is_ a row with that id!)
-}*///--todo--sorta evil, uses SELECT *
+}///--todo--sorta evil, uses SELECT *
 //--todo--isn't this very intensive and slow? Called so many times? (put a dump in the query function)
+*/
 ?>

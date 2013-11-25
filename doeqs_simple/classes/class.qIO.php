@@ -60,7 +60,7 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 			$qid=intval($qid);
 			$query.=" QID=".intval($qid)." OR ";
 		}
-		$query.=" 0) AND Deleted=FALSE LIMIT ".count($qids);
+		$query.=" 0) AND Deleted=0 LIMIT ".count($qids);
 		
 		$this->updateQIDs($qids,"TimesViewed=TimesViewed+1");
 		
@@ -80,35 +80,45 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 	public function addByArray($paramsArray){//Add to the array of questions, each from array or ID.
 		global $ruleSet;
 		global $database;
+		global $DEFAULT_QUESTION_TEXT,$DEFAULT_ANSWER_TEXT;
 		
 		if(is_null($paramsArray))throw new Exception("No parameters");
 		elseif(!is_array($paramsArray))throw new Exception("Invalid input params");
 		
+		$offsetN=count($this->QID);//"Temporary" fix. Ugly. Offsets the $n=0...howevermany-1 to account for $n stuff. This is so in case there's problems with entering Q, won't mess up alignment of arrays.
 		foreach($paramsArray as $n=>$params){
-			if(!is_array($params))throw new Exception("Bad parameters");//Given all the needed parameters in an array.
-			$n+=count($this->QID);//"Temporary" fix. Ugly. --todo-- what does this even do??
+			if(!is_array($params))continue;//Given all the needed parameters in an array.
+			$n+=$offsetN;
 			$this->isB[$n]=$params["isB"]==1?1:0;
 		
 			$this->Subject[$n]=intval($params["Subject"]);
-			if($this->Subject[$n]===false||$this->Subject[$n]>4||$this->Subject[$n]<0)throw new Exception("Invalid subject");
+			if($this->Subject[$n]===false||!array_key_exists($this->Subject[$n],$ruleSet["Subjects"]))throw new Exception("Invalid subject");
 			
-			$this->isSA[$n]=(bool)$params["isSA"];
-			$this->Question[$n]=$params["Question"];
-			$this->Answer[$n]=$params["Answer"];
-			$this->MCChoices[$n]=$params["MCChoices"];
+			$this->isSA[$n]=(bool)intval($params["isSA"]);
+			if(!($this->isSA[$n]===true||$this->isSA[$n]===false))throw new Exception("Invalid question-type");
+			
+			
+			//Deal with MC vs SA answers
+			$this->Answer[$n]="";
+			$this->MCChoices[$n]=array();
+			if(!$this->isSA[$n]){
+				$this->MCChoices[$n]=$params["MCChoices"];
+				for($i=0;$i<count($ruleSet["MCChoices"]);$i++)
+					if(!array_key_exists($i,$this->MCChoices[$n])||empty($this->MCChoices[$n][$i]))
+						throw new Exception("Some multiple choice blank");
+				if(!array_key_exists("MCa",$params))throw new Exception("No MC answer chosen");
+				$this->Answer[$n]=intval($params["MCa"]);
+				if(!(is_int($this->Answer[$n])&&array_key_exists($this->Answer[$n],$ruleSet["MCChoices"])))
+					throw new Exception("Invalid MC answer chosen");
+			}
+			else {
+				$this->Answer[$n]=$params["Answer"];
+				if($this->Answer[$n]==""||$this->Answer[$n]==$DEFAULT_ANSWER_TEXT)throw new Exception("Blank answer");
+			}
 			
 			//Validity checking
-			global $DEFAULT_QUESTION_TEXT,$DEFAULT_ANSWER_TEXT;
-			if(!($this->isSA[$n]===true||$this->isSA[$n]===false))throw new Exception("Invalid question-type");
-			if($this->Question[$n]==""||$this->Question[$n]==$DEFAULT_QUESTION_TEXT
-				||$this->Answer[$n]==""||$this->Answer[$n]==$DEFAULT_ANSWER_TEXT)
-				throw new Exception("Blank question/answer");//handle js-side too
-			
-			//Deal with MC
-			if(!$this->isSA[$n]){
-				if(anyIndicesEmpty($this->MCChoices[$n],0,1,2,3))throw new Exception("Some multiple choice blank");
-				if(($this->Answer[$n]=array_search(substr(trim($this->Answer[$n]),0,1),$ruleSet["MCChoices"]))===false)throw new Exception("Invalid answer");
-			}
+			$this->Question[$n]=$params["Question"];
+			if($this->Question[$n]==""||$this->Question[$n]==$DEFAULT_QUESTION_TEXT)throw new Exception("Blank question");//handle js-side too
 			
 			//Hm. Start value for QID.
 			$this->QID[$n]=0;
@@ -116,7 +126,8 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 	}
 	
 	public function commit(){
-		global $database;
+	//foreach($this as $ind=>$var)echo $ind." ".count($var)."<br>";die();
+		global $database,$ruleSet;
 		$max_query_length=10000;//Estimated maximum query length; the actual is something like 16MB but whatever
 		$i=0;//which iteration we're on.
 		$q='INSERT INTO questions (isB, Subject, isSA, Question, MCW, MCX, MCY, MCZ, Answer) VALUES ';
@@ -124,8 +135,9 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 		$lengthestimate=count($q);
 		$QIDs=array();
 		foreach($this->QID as $ind=>$val){
-			$lengthestimate+=count($this->Question[$ind])+count(implode($this->MCChoices[$ind]))+count($this->Answer[$ind])+20;
-			if($lengthestimate-1>$max_query_length){
+			if($val!=0)continue;
+			$lengthestimate+=count($this->Question[$ind])+count(implode($this->MCChoices[$ind]))+count($this->Answer[$ind])+10;
+			if($lengthestimate>$max_query_length){
 				$database->query_assoc(substr($q,0,-1),$valarr);
 				for($j=0;$j<$i;$j++)$QIDs[]=$database->insert_id+$j;
 				$i=0;
@@ -137,6 +149,9 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 			$how_many_entries=9;
 			$textadd="(";for($x=$how_many_entries*$i;$x<$how_many_entries*($i+1);$x++)$textadd.="%$x%,";$textadd=substr($textadd,0,-1).")";
 			
+			foreach($ruleSet["MCChoices"] as $x=>$v)
+				if(!array_key_exists($x,$this->MCChoices[$ind]))
+					$this->MCChoices[$ind][$x]=0;
 			array_push($valarr,$this->isB[$ind],$this->Subject[$ind],$this->isSA[$ind],$this->Question[$ind],
 				$this->MCChoices[$ind][0],$this->MCChoices[$ind][1],$this->MCChoices[$ind][2],$this->MCChoices[$ind][3],
 				$this->Answer[$ind]);
@@ -150,7 +165,7 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 		
 		//:( duplicates
 		//http://stackoverflow.com/questions/18932/how-can-i-remove-duplicate-rows no idea what it does
-		//$database->query_assoc("UPDATE questions SET Deleted=TRUE WHERE QID NOT IN (SELECT MIN(QID) FROM questions WHERE Deleted=FALSE GROUP BY Question)");
+		//$database->query_assoc("UPDATE questions SET Deleted=1 WHERE QID NOT IN (SELECT MIN(QID) FROM questions WHERE Deleted=0 GROUP BY Question)");
 		//--todo--so how to do this for our php copy of the questions?
 	}
 	
@@ -232,11 +247,11 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 	}
 };
 function getExportSize(){
-	$a=$database->query_assoc("SELECT COUNT(*) FROM questions WHERE Deleted=FALSE");
+	$a=$database->query_assoc("SELECT COUNT(*) FROM questions WHERE Deleted=0");
 	echo "Estimated size: ".($a[0]/5)."KB";
 }
 function exportQuestionsCSV(){
-	$database->query_assoc("SELECT * INTO OUTFILE 'questionsExport.csv' FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\r\n' FROM questions WHERE Deleted=FALSE");
+	$database->query_assoc("SELECT * INTO OUTFILE 'questionsExport.csv' FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\r\n' FROM questions WHERE Deleted=0");
 }
 
 ?>

@@ -4,7 +4,7 @@
 //function posted($postvarname1,$postvarname2,...) //Returns whether all of those are existent $_POST variables. (ie $_POST[$postvarname1],...)
 //function getted($getvarname1,$getvarname2,...) //Returns whether all of those are existent $_GET variables. (ie $_GET[$getvarname1],...)
 
-$VERSION_NUMBER="0.2";
+$VERSION_NUMBER="0.2.1";
 
 $DEBUG_MODE=false;//True if want lots of output. False on real production.
 date_default_timezone_set("America/Toronto");//(No Boston)
@@ -20,7 +20,7 @@ $ruleSet=array(
 	"QTypes"=>array("Multiple Choice","Short Answer"),
 	"QParts"=>array("TOSS-UP","BONUS"),
 	"MCChoices"=>array("W","X","Y","Z"),
-	"SubjChars"=>str_split('bcpme'),
+	"SubjChars"=>str_split('bcpmes'),
 	"TypeChars"=>str_split('sm'),
 	"PartChars"=>str_split('tb'),
 );

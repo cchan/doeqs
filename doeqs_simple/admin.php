@@ -37,11 +37,7 @@ if(isSet($_SESSION["admin"])||(csrfVerify()&&(isSet($_POST["p"])&&$_POST["p"]===
 	//verifies nonexistence of any other files
 	}
 	
-	$q=$database->query("SELECT Subject, COUNT(*) AS nQs FROM questions GROUP BY Subject");
-	$subjN=array();
-	$totalN=0;
-	while($r=$q->fetch_assoc())$totalN+=($subjN[$r["Subject"]]=$r["nQs"]);
-
+	
 	$filesTotalSize="no idea";
 	//calculated thru system commands or something? Since if just tabulates directory doesn't count tmp files and such
 	?>
@@ -49,9 +45,9 @@ if(isSet($_SESSION["admin"])||(csrfVerify()&&(isSet($_POST["p"])&&$_POST["p"]===
 	<h2>Admin! Shh</h2>
 	<h4>Remember to log out!</h4>
 	<input type="hidden" name="ver" value="<?=csrfCode();?>"/>
-	<fieldset <?php if($totalN==0)echo "disabled";?>>
+	<fieldset>
 		<legend>Database</legend>
-		<div>Number of questions in database (<b>total <?=$totalN;?></b>): <?php foreach($subjN as $i=>$n)echo "<br>{$ruleSet["Subjects"][$i]}: <b>$n</b>";?></div>
+		<?=database_stats();?>
 		<?php //Do a separate CONFIRM page ?>
 		<input type="submit" name="truncQs" value="Delete All Questions" class="confirm"/><br>
 		<input type="submit" name="timesViewed" value="Reset TimesVieweds" class="confirm"/><br>

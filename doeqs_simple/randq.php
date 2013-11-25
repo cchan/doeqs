@@ -29,7 +29,7 @@ foreach($counts as $name=>$count){
 }
 $checkboxoptions.='<b>Number of Questions</b> (max '.$RANDQ_MAX_QUESTIONS_AT_ONCE.') <input type="number" name="numqs" value="'.$numqs.'" min="1" max="'.$RANDQ_MAX_QUESTIONS_AT_ONCE.'"/>';
 ?>
-<div><b>Hotkeys</b> space to display next hidden answer, backspace to hide last revealed answer, enter for fetching more questions</div>
+<span style="color:#FFFFFF;background-color:#000000;border-radius:5px;padding:0px 5px;"><b>Hotkeys</b> space to display next hidden answer, backspace to hide last revealed answer, enter for fetching more questions</span>
 <br>
 <?=(isSet($markedBad))?$markedBad:"<br>";?>
 <form action="randq.php" method="POST" id="nextq">

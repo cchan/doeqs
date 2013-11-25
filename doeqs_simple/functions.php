@@ -65,6 +65,14 @@ function arrayToRanges($arr){//Converts [1,2,3,5,6,8,9,10] to "1-3, 5-6, 8-10"
 	return $string;
 }
 
+function Array2DTranspose($arr){
+    $out = array();
+    foreach ($arr as $key => $subarr)
+		foreach ($subarr as $subkey => $subvalue)
+			$out[$subkey][$key] = $subvalue;
+    return $out;
+}
+
 
 
 
@@ -110,13 +118,13 @@ function csrfVerify(){//Checks CSRF code validity, and returns whether to procee
 }
 function csrfCode(){//Returns randomly generated CSRF code. The return value is static.
 	static $code="";
-	if($code!==""&&$code===$_SESSION["ver"])return $code;
+	if(sessioned("ver")&&$code===$_SESSION["ver"])return $code;
 	$length=rand(48,64);
     $c = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';$cl = strlen($c);
     $s = '';
     for($i=0;$i<$length;$i++)$s.=$c[rand(0,$cl-1)];
 	$_SESSION["verpage"]=parse_url($_SERVER["SCRIPT_FILENAME"],PHP_URL_PATH);
-    return ($_SESSION["ver"]=$s);
+    return ($code=$_SESSION["ver"]=$s);
 }
 
 
@@ -143,11 +151,11 @@ function templateify(){
 		$nav.="<a href='$p.php'>$t</a>&nbsp;&middot;&nbsp;";
 	$nav.="]";
 	
-	ob_start();
-	require(__DIR__."\html_template.php");
-	$template=ob_end_clean();
+	//tried OB which died for some reason... ob_start();
+	$template=file_get_contents(__DIR__."/html_template.php");
 	
-	echo str_replace(["%title%","%content%","%nav%"],[$title,$content,$nav],);
+	global $VERSION_NUMBER;
+	echo str_replace(["%title%","%content%","%nav%","%version%"],[$title,$content,$nav,$VERSION_NUMBER],$template);
 	ob_flush();
 	flush();
 }
@@ -157,7 +165,22 @@ function error($description){
 	ob_clean();
 	echo "An error occurred";
 	if($DEBUG_MODE)echo ": $description";
-	die();
+}
+
+
+
+function database_stats(){
+	global $database,$ruleSet;
+	$ret="<div>Number of questions in database:";
+	$totalN=0;
+	$q=$database->query("SELECT Subject, COUNT(*) AS nQs FROM questions WHERE Deleted=0 GROUP BY Subject");
+	while($r=$q->fetch_assoc()){
+		$totalN+=$r["nQs"];
+		$ret.="<br>{$ruleSet["Subjects"][$r["Subject"]]}: <b>".($r["nQs"])."</b>";
+	}
+	$ret.="<br>Total: <b>$totalN</b>";
+	$ret.="</div>";
+	return $ret;
 }
 
 
