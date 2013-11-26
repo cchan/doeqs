@@ -1,7 +1,7 @@
 <?php
 require_once "functions.php";
 
-if(csrfVerify()&&posted("markBad","qids")){
+if(csrfVerify()&&posted("markBad","qids")){//--todo-- should be able to EDIT instead of just marking wrong. Also store history of questions viewed - "Views" table (hugeness) so can look back, mark for look back, etc.
 	$q=new qIO();
 	$q->addByQID(array_intersect_key($_POST["qids"],array_flip($_POST["markBad"])));//Only do the QIDs that are in markBad.
 	$q->markBad();
