@@ -1,12 +1,20 @@
 <?php
-echo var_dump($_GET);
+echo var_dump($_REQUEST);
+echo var_dump($_FILES);
 ?>
-<form action="test.php" method="GET">
+<form action="test.php" method="POST" enctype="multipart/form-data">
 <input type="checkbox" name="asdf[]" value="0"/>
 <input type="checkbox" name="asdf[]" value="1"/>
 <input type="checkbox" name="asdf[]" value="2"/>
-<input type="submit"/>
+<input type="file" name="fileupload"/>
+<input type="submit" value="asdf!"/>
 </form>
+<form id="fileupload" action="test.php" method="POST" enctype="multipart/form-data">
+		<input type="hidden" name="ver" value="asdf"/>
+		Select file to upload:<input type="file" name="fileupload"><br>
+		<i>We currently support txt, html, doc, docx, odt, and pdf.</i>
+		<input type="submit" value="Upload"><br>
+	</form>
 
 <?php
 require_once "functions.php";

@@ -3,15 +3,15 @@
 //redirects file conversions-to-plaintext to other functions that do the work.
 class fileToStr{
 	public function __construct(){}
-	public function convert($file){//The actual $_FILE array, not just the file path or anything.
-		$ext=substr($file['name'],strrpos($file['name'],'.')+1);
+	public function convert($filename,$filepath){
+		$ext=substr($filename,strrpos($filename,'.')+1);
 		switch($ext){
-			case "txt": return file_get_contents($file['tmp_name']);
-			case "html": case "htm": return strip_tags(str_replace(array("<br>","<div>"),"\n",file_get_contents($file['tmp_name'])));//get rid of all html tags, but keep some linebreaks there.
-			case "doc":	return $this->docToText($file['tmp_name']);
-			case "docx": return $this->docxToText($file['tmp_name']);
-			case "odt": return $this->odtToText($file['tmp_name']);
-			case "pdf": return $this->pdfToText($file['tmp_name']);
+			case "txt": return file_get_contents($filepath);
+			case "html": case "htm": return strip_tags(str_replace(array("<br>","<div>"),"\n",file_get_contents($filepath)));//get rid of all html tags, but keep some linebreaks there.
+			case "doc":	return $this->docToText($filepath);
+			case "docx": return $this->docxToText($filepath);
+			case "odt": return $this->odtToText($filepath);
+			case "pdf": return $this->pdfToText($filepath);
 			//case "csv"://really awk case. Plus not sanitized. D:
 			//$database->query_assoc("LOAD DATA INFILE '%0%' INTO TABLE questions FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\r\n' IGNORE 1 LINES",($_FILE["file"]["tmp_name"]));
 			

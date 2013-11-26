@@ -26,7 +26,7 @@ if(csrfVerify()&&(posted("copypaste")||isSet($_FILES["fileupload"])||posted("dir
 					$unparsed.=$qp->parse($fs->convert(array("tmp_name"=>$tmp_name,"name"=>$name)));
 				}
 			}
-			else */$unparsed=$qp->parse($fs->convert($_FILES["fileupload"]));
+			else */$unparsed=$qp->parse($fs->convert($_FILES["fileupload"]["name"],$_FILES["fileupload"]["tmp_name"]));
 		}
 		if(str_replace(array("\n","\r"," ","	","_"),"",$unparsed)!="")
 			echo "<br><br>Below, in the copy-paste section, are what remains in the document after detecting all the questions we could find.<br>";

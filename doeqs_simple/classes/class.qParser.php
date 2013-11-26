@@ -6,8 +6,8 @@ class qParser{
 	public function parse($qstr){
 		global $database;
 		global $ruleSet;
-		if($qstr===""){echo "Error: No text submitted.";return "";}
-		if(strpos($qstr,"\n")===false){echo "Needs line breaks for delineation; no questions uploaded.";return $qstr;}
+		if(str_replace([" ","	","\n","\r"],"",$qstr)===""){echo "Error: No text submitted.";return "";}
+		if(strpos($qstr,"\n")===false){echo "An error occurred. ".$qstr;return;}//either means there's no linebreaks or something happened in fileToStr. Ugh.
 		
 		$nMatches=preg_match_all($this->qregex(), $qstr, $qtext);
 		
@@ -41,7 +41,7 @@ class qParser{
 	//dafuq [in regexpal] it works fine except doesn't match mc questions where there's "how" or "law" in the question, or where there's "only" in X
 	//also, mislabeled MC as SA passes in no-linebreaks mode
 		$subjChoices='(BIO(?:LOGY)?|CHEM(?:ISTRY)?|PHYS(?:|ICS|ICAL SCIENCE)|MATH(?:EMATICS)?|E(?:SS|ARTHSCI|ARTH SCIENCE|ARTH (?:AND|&) SPACE(?: SCIENCE)?))';
-		$e='[\:\.\)\- ]';//W. or W) or W- or W: or W .
+		$e='[\:\.\)\-]';//W. or W) or W- or W:. //can't have space because if has "asdfy asdf" as x, will catch "y "
 		$a='[\:\.\)\-]';//W. or W) or W- or W:.
 		
 		$mcChoices='';

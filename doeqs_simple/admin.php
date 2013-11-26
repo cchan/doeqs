@@ -1,5 +1,5 @@
 <?php
-require "functions.php";
+require_once "functions.php";
 
 if(isSet($_SESSION["admin"])||(csrfVerify()&&(isSet($_POST["p"])&&$_POST["p"]==="supersecretstuff"))){
 	$_SESSION["admin"]=true;
