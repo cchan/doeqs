@@ -1,7 +1,13 @@
 <?php
 require_once "functions.php";
 
-if(isSet($_SESSION["admin"])||(csrfVerify()&&(isSet($_POST["p"])&&$_POST["p"]==="supersecretstuff"))){
+//separate face of this page: "Are you sure?"
+//echo $_SESSION["admin-ver"]=genVerCode();
+//if($_POST["admin-ver"]===$_SESSION["admin-ver"])
+
+//for particularly dangerous ones "Reenter password to do this action"
+
+if(csrfVerify()){
 	$_SESSION["admin"]=true;
 	if(isSet($_POST["logout"])){
 		session_total_destroy();
@@ -36,14 +42,13 @@ if(isSet($_SESSION["admin"])||(csrfVerify()&&(isSet($_POST["p"])&&$_POST["p"]===
 	//checks existence and sizes of all files
 	//verifies nonexistence of any other files
 	}
+}
 	
 	
 	$filesTotalSize="no idea";
 	//calculated thru system commands or something? Since if just tabulates directory doesn't count tmp files and such
-	?>
+?>
 <form action="admin.php" method="POST">
-	<h2>Admin! Shh</h2>
-	<h4>Remember to log out!</h4>
 	<input type="hidden" name="ver" value="<?=csrfCode();?>"/>
 	<fieldset>
 		<legend>Database</legend>
@@ -67,6 +72,3 @@ if(isSet($_SESSION["admin"])||(csrfVerify()&&(isSet($_POST["p"])&&$_POST["p"]===
 	for(var i=0;i<c.length;i++)c[i].onclick=function(){return confirm('Are you sure you want to "'+this.value+'"?');}
 	</script>
 </form>
-<?php }else{?>
-	<form action="admin.php" method="POST"><input type="hidden" name="ver" value="<?=csrfCode();?>"/><input type="password" name="p"/></form>
-<?php }?>

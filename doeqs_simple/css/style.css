@@ -38,9 +38,9 @@ font-weight:bold;color:#00f;font-size:0.8em;
 display:none;font-weight:bold;
 }
 
-body.noJQuery .hiddenanswer:hover .ans{
+.no-js .hiddenanswer:hover .ans{
 display:inline;
-}body.noJQuery .hiddenanswer:hover .hov{
+}.no-js .hiddenanswer:hover .hov{
 color:transparent;
 }
 
@@ -53,4 +53,28 @@ background-color:#000000;
 text-align:center;
 font-weight:bold;
 border-radius:5px;
+}
+
+#bugrept{
+position:fixed;
+border:solid 3px #000000;
+border-radius:10px;
+width:240px;right:10px;
+background-color:#FFFFFF;
+padding:10px;
+top:45px;
+box-shadow:0 0 1px 1px #999999;
+}
+#bugrept textarea{
+width:90%;
+height:5em;
+display:block;
+font-size:0.8em;
+font-family:Courier, sans-serif;
+}
+#bugrept .text{
+font-size:0.75em;
+}
+#bugrept #clicker{
+font-size:0.7em;
 }

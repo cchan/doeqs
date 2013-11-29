@@ -9,22 +9,21 @@
 
 
 class qIO{//Does all the validation... for you! By not trusting you at all. ;)
-	private $QID,$isB,$Subject,$isSA,$Question,$MCChoices,$Answer;
+	//private $QID,$isB,$Subject,$isSA,$Question,$MCChoices,$Answer;
+	private $Questions;
 	public function __construct(){
-		$this->QID=$this->isB=$this->Subject=$this->isSA=$this->Question=$this->MCChoices
-			=$this->Answer=array();
+		//$this->QID=$this->isB=$this->Subject=$this->isSA=$this->Question=$this->MCChoices=$this->Answer=array();
 	}
 	public function __destruct(){
-		foreach($this->QID as $id)if($id==0)throw new Exception("Uncommitted added questions.");
+		foreach($this->Questions as $q)if($q[0]==0)throw new Exception("Uncommitted added questions.");
 	}
 	public function addRand($parts,$subjects,$types,$num){//arrays of the numbers to include eg subj [0,1,4] for b,c,e
 		global $database, $MARK_AS_BAD_THRESHOLD, $ruleSet, $RANDQ_MAX_QUESTIONS_AT_ONCE;
 		
 		if(!is_numeric($num)||!($num=intval($num)))$num=$DEFAULT_NUMQS;
-		if($num<1)$num=1;
-		if($num>$RANDQ_MAX_QUESTIONS_AT_ONCE)$num=$RANDQ_MAX_QUESTIONS_AT_ONCE;
+		if($num<1)$num=1;if($num>$RANDQ_MAX_QUESTIONS_AT_ONCE)$num=$RANDQ_MAX_QUESTIONS_AT_ONCE;
 		
-		$query="SELECT QID FROM questions WHERE MarkBad < $MARK_AS_BAD_THRESHOLD AND Deleted=0";
+		$query="SELECT QID, isB, Subject, isSA, Question, MCW, MCX, MCY, MCZ, Answer FROM questions WHERE MarkBad < $MARK_AS_BAD_THRESHOLD AND Deleted=0";
 		$stuff=array("QParts"=>$parts,"Subjects"=>$subjects,"QTypes"=>$types);
 		$counts=array("QParts"=>count($ruleSet["QParts"]),"Subjects"=>count($ruleSet["Subjects"]),"QTypes"=>count($ruleSet["QTypes"]));
 		$dbname=array("QParts"=>"isB","Subjects"=>"Subject","QTypes"=>"isSA");
@@ -44,11 +43,16 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 			//The assumption that there is a large pool for _each_ possible classification (2*5*2=20 of them) eliminates this problem.
 		$query.=" ORDER BY TimesViewed ASC, RAND() LIMIT $num";//Order by TimesViewed, and then randomize within each TimesViewed value.
 		$result=$database->query($query);
-		$QIDs=array();
-		while($r=$result->fetch_assoc())$QIDs[]=$r["QID"];
 		
 		if($result->num_rows==0)return "No such questions exist.";
-		$this->addByQID($QIDs);
+		
+		$QIDs=array();
+		while($row=$result->fetch_assoc()){
+			$QIDs[]=$r["QID"];
+			$this->Questions[]=array($row["QID"],$row["isB"],$row["Subject"],$row["isSA"],
+				$row["Question"],array($row["MCW"],$row["MCX"],$row["MCY"],$row["MCZ"]),$row["Answer"]);
+		}
+		$this->updateQIDs($QIDs,"TimesViewed=TimesViewed+1");
 		if($result->num_rows!=$num)return "More questions requested than such questions exist.";
 	}
 	public function addByQID($qids){
@@ -68,13 +72,8 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 		if($result->num_rows<count($qids))throw new Exception("QIDs do not exist.");
 		
 		while($row=$result->fetch_assoc()){
-			$this->QID[]=$row["QID"];
-			$this->isB[]=$row["isB"];
-			$this->Subject[]=$row["Subject"];
-			$this->isSA[]=$row["isSA"];
-			$this->Question[]=$row["Question"];
-			$this->MCChoices[]=array($row["MCW"],$row["MCX"],$row["MCY"],$row["MCZ"]);
-			$this->Answer[]=$row["Answer"];
+			$this->Questions[]=array($row["QID"],$row["isB"],$row["Subject"],$row["isSA"],
+				$row["Question"],array($row["MCW"],$row["MCX"],$row["MCY"],$row["MCZ"]),$row["Answer"]);
 		}
 	}
 	public function addByArray($paramsArray){//Add to the array of questions, each from array or ID.
@@ -85,43 +84,42 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 		if(is_null($paramsArray))throw new Exception("No parameters");
 		elseif(!is_array($paramsArray))throw new Exception("Invalid input params");
 		
-		$offsetN=count($this->QID);//"Temporary" fix. Ugly. Offsets the $n=0...howevermany-1 to account for $n stuff. This is so in case there's problems with entering Q, won't mess up alignment of arrays.
 		foreach($paramsArray as $n=>$params){
-			if(!is_array($params))continue;//Given all the needed parameters in an array.
-			$n+=$offsetN;
-			$this->isB[$n]=$params["isB"]==1?1:0;
-		
-			$this->Subject[$n]=intval($params["Subject"]);
-			if($this->Subject[$n]===false||!array_key_exists($this->Subject[$n],$ruleSet["Subjects"]))throw new Exception("Invalid subject");
+			if(!is_array($params))error("Wrong parameter type.");//Given all the needed parameters in an array.
 			
-			$this->isSA[$n]=(bool)intval($params["isSA"]);
-			if(!($this->isSA[$n]===true||$this->isSA[$n]===false))throw new Exception("Invalid question-type");
+			$required=["isB","Subject","isSA","Question"];
+			//$types=[[0,1],range(0,count($ruleSet["Subjects"])),[0,1],"","","","","","",""];
+			if(count(array_intersect_key(array_flip($required),$params))!=count($required))error("Missing parameters.");
 			
+			$params["isB"]=($params["isB"]==1)?1:0;
+			
+			$params["Subject"]=intval($params["Subject"]);
+			if($params["Subject"]===false||!array_key_exists($params["Subject"],$ruleSet["Subjects"]))error("Invalid subject");
+			
+			$params["isSA"]=($params["isSA"]==1)?1:0;
+			
+			if($params["Question"]=="")error("Blank question");//handle js-side too
 			
 			//Deal with MC vs SA answers
-			$this->Answer[$n]="";
-			$this->MCChoices[$n]=array();
-			if(!$this->isSA[$n]){
-				$this->MCChoices[$n]=$params["MCChoices"];
+			if(!$params["isSA"]){
+				$required=["MCW","MCX","MCY","MCZ","MCa"];
+				if(count(array_intersect_key(array_flip($required),$params))!=count($required))error("Missing parameters.");
 				for($i=0;$i<count($ruleSet["MCChoices"]);$i++)
-					if(!array_key_exists($i,$this->MCChoices[$n])||empty($this->MCChoices[$n][$i]))
-						throw new Exception("Some multiple choice blank");
-				if(!array_key_exists("MCa",$params))throw new Exception("No MC answer chosen");
-				$this->Answer[$n]=intval($params["MCa"]);
-				if(!(is_int($this->Answer[$n])&&array_key_exists($this->Answer[$n],$ruleSet["MCChoices"])))
-					throw new Exception("Invalid MC answer chosen");
-			}
-			else {
-				$this->Answer[$n]=$params["Answer"];
-				if($this->Answer[$n]==""||$this->Answer[$n]==$DEFAULT_ANSWER_TEXT)throw new Exception("Blank answer");
+					if(empty($params["MC".$ruleSet["MCChoices"][$i]]))
+						error("Some multiple choice blank");
+				if(!(is_int($params["MCa"])&&array_key_exists($params["MCa"],$ruleSet["MCChoices"])))
+					error("Invalid MC answer chosen");
+				$params["Answer"]=$params["MCa"];
+			}else{
+				if(!array_key_exists("Answer",$params))error("Missing parameters.");
+				if($params["Answer"]=="")error("Blank answer");
+				$params["MCW"]=$params["MCX"]=$params["MCY"]=$params["MCZ"]=NULL;
 			}
 			
-			//Validity checking
-			$this->Question[$n]=$params["Question"];
-			if($this->Question[$n]==""||$this->Question[$n]==$DEFAULT_QUESTION_TEXT)throw new Exception("Blank question");//handle js-side too
-			
-			//Hm. Start value for QID.
-			$this->QID[$n]=0;
+			//Hm. Start value for QID = 0.
+			$this->Question[]=array(0,$params["isB"],$params["Subject"],$params["isSA"],
+			$params["Question"],$params["MCW"],$params["MCX"],$params["MCY"],$params["MCZ"],
+			$params["Answer"]);
 		}
 	}
 	
@@ -134,7 +132,7 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 		$valarr=array();
 		$lengthestimate=count($q);
 		$QIDs=array();
-		foreach($this->QID as $ind=>$val){
+		foreach($this->Question as $ind=>$arr){//RESUME HEREEEEEEEEEEEEEEEEEE!~~~~~~~~~~~~
 			if($val!=0)continue;
 			$lengthestimate+=count($this->Question[$ind])+count(implode($this->MCChoices[$ind]))+count($this->Answer[$ind])+10;
 			if($lengthestimate>$max_query_length){
@@ -151,7 +149,7 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 			
 			foreach($ruleSet["MCChoices"] as $x=>$v)
 				if(!array_key_exists($x,$this->MCChoices[$ind]))
-					$this->MCChoices[$ind][$x]=0;
+					$this->MCChoices[$ind][$x]=NULL;
 			array_push($valarr,$this->isB[$ind],$this->Subject[$ind],$this->isSA[$ind],$this->Question[$ind],
 				$this->MCChoices[$ind][0],$this->MCChoices[$ind][1],$this->MCChoices[$ind][2],$this->MCChoices[$ind][3],
 				$this->Answer[$ind]);

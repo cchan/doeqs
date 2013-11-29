@@ -18,16 +18,19 @@ if(csrfVerify()&&(posted("copypaste")||isSet($_FILES["fileupload"])||posted("dir
 	else{
 		$qp=new qParser();
 		if(isSet($_POST["copypaste"]))$unparsed=$qp->parse($_POST["copypaste"]);
-		else{
+		elseif(isSet($_POST["fileupload"])){
 			$fs=new fileToStr();
-			/*if(is_array($_FILES["fileupload"]["tmp_name"])){
+			if(is_array($_FILES["fileupload"]["tmp_name"])){//for multiple-supporting browsers
 				foreach($_FILES["fileupload"]["tmp_name"] as $ind=>$tmp_name){
 					$name=$_FILES["fileupload"]["name"][$ind];
-					$unparsed.=$qp->parse($fs->convert(array("tmp_name"=>$tmp_name,"name"=>$name)));
+					echo "File $name: ";
+					$unparsed.=$qp->parse($fs->convert($name,$tmp_name));
+					echo "<br>";
 				}
 			}
-			else */$unparsed=$qp->parse($fs->convert($_FILES["fileupload"]["name"],$_FILES["fileupload"]["tmp_name"]));
+			else $unparsed=$qp->parse($fs->convert($_FILES["fileupload"]["name"],$_FILES["fileupload"]["tmp_name"]));
 		}
+		else{error("Invalid form input");}
 		if(str_replace(array("\n","\r"," ","	","_"),"",$unparsed)!="")
 			echo "<br><br>Below, in the copy-paste section, are what remains in the document after detecting all the questions we could find.<br>";
 		else echo "<br><br>No unparsed question text found (that means we got every question). Yay!";
@@ -47,11 +50,11 @@ Enter some questions:
 			<fieldset>
 				<legend style="text-align:center;"><b><?php echo $qpart;?></b></legend>
 				<input type="hidden" name="Q[<?php echo $qpartval;?>][isB]" value="<?php echo $qpartval;?>"/>
-				<select name="Q[<?php echo $qpartval;?>][Subject]"><?php foreach($ruleSet["Subjects"] as $subjval=>$subj)echo "<option value='$subjval'>$subj</option>";?></select>
-				<select name="Q[<?php echo $qpartval;?>][isSA]"><?php foreach($ruleSet["QTypes"] as $typeval=>$type)echo "<option value='$typeval'>$type</option>";?></select><br>
-				<textarea name="Q[<?php echo $qpartval;?>][Question]" placeholder="<?php echo $DEFAULT_QUESTION_TEXT;?>"></textarea><br>
-				<div><?php foreach($ruleSet["MCChoices"] as $choiceval=>$choice)echo "<input type='radio' name='Q[$qpartval][MCa]' value='$choiceval'/>$choice) <input type='text' name='Q[$qpartval][MCChoices][]'/><br>";?></div>
-				ANSWER: <input type="text" name="Q[<?php echo $qpartval;?>][Answer]" placeholder="<?php echo $DEFAULT_ANSWER_TEXT;?>" value=""/><br>
+				<select class="subjsel" name="Q[<?php echo $qpartval;?>][Subject]"><?php foreach($ruleSet["Subjects"] as $subjval=>$subj)echo "<option value='$subjval'>$subj</option>";?></select>
+				<select class="typesel" name="Q[<?php echo $qpartval;?>][isSA]"><?php foreach($ruleSet["QTypes"] as $typeval=>$type)echo "<option value='$typeval'>$type</option>";?></select><br>
+				<textarea name="Q[<?php echo $qpartval;?>][Question]" placeholder="Your question here..."></textarea><br>
+				<div class="mcwrap"><?php foreach($ruleSet["MCChoices"] as $choiceval=>$choice)echo "<input type='radio' name='Q[$qpartval][MCa]' value='$choiceval'/>$choice) <input type='text' name='Q[$qpartval][MC$choice]'/><br>";?></div>
+				ANSWER: <input type="text" name="Q[<?php echo $qpartval;?>][Answer]" placeholder="Your answer here..." value=""/><br>
 			</fieldset>
 		<?php }?><br>
 		<input type="submit" name="directentry" value="Submit Question"/>
@@ -78,7 +81,9 @@ Enter some questions:
 		<?php }else{?>
 			Paste it all here:<br>
 		<?php }?>
-		<textarea name="copypaste" style="width:100%;height:10em;"><?=preg_replace(['/[\r\n]+/','/[\_]+/'], ["\n",''],$unparsed);?></textarea><br>
+		<textarea name="copypaste" style="width:100%;height:10em;">
+			<?=preg_replace(['/[\r\n]+/','/[\_]+/'], ["\n",''],$unparsed);?>
+		</textarea><br>
 		<input type="submit" value="Submit Question(s)"/>
 	</form>
 	
@@ -86,8 +91,32 @@ Enter some questions:
 	<h2>File Upload</h2>
 	<form id="fileupload" action="input.php" method="POST" enctype="multipart/form-data">
 		<input type="hidden" name="ver" value="<?=csrfCode();?>"/>
-		Select file to upload:<input type="file" name="fileupload"><br>
-		<i>We currently support txt, html, doc, docx, odt, and pdf.</i>
-		<input type="submit" value="Upload"><br>
+		Select file to upload:<br>
+		<input type="file" name="fileupload[]" multiple="multiple"><br>
+		<div style="font-size:0.7em">(up to <?=$MAX_FILE_UPLOADS;?> files if your browser supports it)<br>
+		(up to <?=$UPLOAD_MAX_FILESIZE;?>MB file size)<br>
+		<i>We currently support txt, html, doc, docx, odt, and pdf.</i></div>
+		<input type="submit" name="fileupload" value="Upload"> <small>Be patient, this will take a while.</small><br>
 	</form>
 </div>
+
+<script>
+$(function(){
+	$("input[type='submit']").click(function(e){
+		var maxUpload=<?=$MAX_FILE_UPLOADS;?>
+		var fileUpload = $(this).siblings("input[type='file']");
+		var sum=0;
+		fileUpload.each(function(){
+			sum+=parseInt(this.files.length)||0;
+		});
+		if (sum>maxUpload){
+			alert("You can only upload a maximum of "+maxUpload+" files");
+			e.preventDefault();
+			return false;
+		}
+	});
+	
+	//$(".subjsel").change(function(){$(".subjsel").//
+	$(".typesel").change(function(){if($(this).value()==0)$(this).siblings(".mcwrap").hide();else $(this).siblings(".mcwrap").display();})
+});
+</script>

@@ -20,13 +20,13 @@ class qParser{
 					"Subject"=>array_search(strtolower(substr($qtext[3][$i],0,1)),$ruleSet["SubjChars"]),//--todo-- THIS IS A PROBLEM.
 					"isSA"=>$qtext[4][$i]=="",
 					"Question"=>str_replace(["\r","\n"],"",$qtext[4][$i].$qtext[9][$i]),//:O IMPORTANT: single quotes do not escape \n etc!
-					"MCChoices"=>array($qtext[5][$i],$qtext[6][$i],$qtext[7][$i],$qtext[8][$i]),
+					"MCW"=>$qtext[5][$i],"MCX"=>$qtext[6][$i],"MCY"=>$qtext[7][$i],"MCZ"=>$qtext[8][$i],
 					"MCa"=>(!empty($qtext[10][$i]))?strpos('wxyz',strtolower($qtext[10][$i])):"",//--todo-- what if 1st char ISN'T [WXYZ]!?
 					"Answer"=>$qtext[11][$i],
 					)));
 			}
 			catch(Exception $e){
-				echo "ERROR: ".$e;
+				echo "ERROR: ".$e->getMessage();
 				//--todo-- DISPLAY ERRORS? OR JUST IGNORING? OR IDK IT SHOULDN'T EVEN HAPPEN
 			}
 		}

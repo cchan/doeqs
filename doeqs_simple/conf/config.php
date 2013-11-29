@@ -24,19 +24,25 @@ $ruleSet=array(
 	"TypeChars"=>str_split('sm'),
 	"PartChars"=>str_split('tb'),
 );
-$DEFAULT_QUESTION_TEXT="Your question here...";
-$DEFAULT_ANSWER_TEXT="Your answer here...";
 $RANDQ_MAX_QUESTIONS_AT_ONCE=10;//How many questions can you fetch per pageload?
 $MARK_AS_BAD_THRESHOLD=2;//How many times can a question can be marked bad until being ignored?
 $SESSION_TIMEOUT_MINUTES=15;
 $DEFAULT_NUMQS=5;
 
+$UPLOAD_MAX_FILESIZE = 2;ini_set('upload_max_filesize',$UPLOAD_MAX_FILESIZE);//MB
+$POST_MAX_SIZE = 2;ini_set('post_max_size',$POST_MAX_SIZE);//MB
+$MAX_FILE_UPLOADS=5; ini_set('max_file_uploads',$MAX_FILE_UPLOADS);//in multi-upload or just multiple file form elements
 
+//db entry for each page? file, title, nav, permission
 $pagesTitles=array(
 	"index"=>"Home",
 	"input"=>"Question Entry",
 	"randq"=>"Random Question",
-	"about"=>"About"
+	"about"=>"About",
+	"login"=>"Login",
+);
+$adminPagesTitles=array(
+	"admin"=>"Admin",
 );
 
 //--todo--max requests per minute

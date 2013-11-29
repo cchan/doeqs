@@ -101,12 +101,22 @@ if (!isset($_SESSION['LAST_ACTIVITY']) || (time() - $_SESSION['LAST_ACTIVITY'] >
 $_SESSION['LAST_ACTIVITY'] = time(); // update last activity time stamp
 
 
+function hashEquals($a,$b){
+	return hash("whirlpool",(string)$a)==hash("whirlpool",(string)$b);
+}
 
 
+function genVerCode(){
+	$length=rand(48,64);//varying length ^^
+    $c = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';$cl = strlen($c);
+    $s = '';
+    for($i=0;$i<$length;$i++)$s.=$c[rand(0,$cl-1)];
+	return $s;
+}
 function csrfVerify(){//Checks CSRF code validity, and returns whether to proceed. The return value is static.
 	static $valid=NULL;
 	if(is_null($valid)){
-		if(posted("ver")&&sessioned("ver")&&$_POST["ver"]===$_SESSION["ver"]){
+		if(posted("ver")&&sessioned("ver")&&hashEquals($_POST["ver"],$_SESSION["ver"])){
 			unset($_POST["ver"],$_SESSION["ver"]);
 			$valid=true;
 		}
@@ -119,39 +129,74 @@ function csrfVerify(){//Checks CSRF code validity, and returns whether to procee
 function csrfCode(){//Returns randomly generated CSRF code. The return value is static.
 	static $code="";
 	if(sessioned("ver")&&$code===$_SESSION["ver"])return $code;
-	$length=rand(48,64);
-    $c = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';$cl = strlen($c);
-    $s = '';
-    for($i=0;$i<$length;$i++)$s.=$c[rand(0,$cl-1)];
-	$_SESSION["verpage"]=parse_url($_SERVER["SCRIPT_FILENAME"],PHP_URL_PATH);
-    return ($code=$_SESSION["ver"]=$s);
+	
+    return ($code=$_SESSION["ver"]=genVerCode());
+}
+
+//In order of precedence:
+//a=admin
+//c=captain
+//u=regular user
+//x=not logged in
+
+//$_SESSION["user_verification_code"]="";
+function userAccess($minPrivilegeLevel){
+	//To be made into database table Users:{email,pass,level}
+	$pass=array(
+	"moo"=>"moo234",
+	);
+	$level=array(
+	"moo"=>"a",
+	);
+	$hierarchy="xuca";//hierarchy, from lowest to highest
+	
+	if(count($minPrivilegeLevel)!==1)error("Invalid permission level '$minPrivilegeLevel'");
+	if(!sessioned("user"))$nUser=0;
+	else $nUser=strpos($hierarchy,$level[$_SESSION["user"]]);
+	$nAllowed=strpos($hierarchy,$minPrivilegeLevel);
+	if($nUser===false)error("Invalid db permission level '{$level[$_SESSION["user"]]}'");
+	if($nAllowed===false)error("Invalid input permission level '$minPrivilegeLevel'");
+	else return $nUser>=$nAllowed;
 }
 
 
-if (version_compare(PHP_VERSION, '5.4.0', '>=')) {//from php.net
+
+/*if (version_compare(PHP_VERSION, '5.4.0', '>=')) {//from php.net
   ob_start(null, 0, PHP_OUTPUT_HANDLER_STDFLAGS ^
 	PHP_OUTPUT_HANDLER_REMOVABLE);
 } else {
   ob_start(null, 0, false);
-}
-//register_shutdown_function("ob_end_flush");//is it already registered automatically? gets weird error
-function templateify(){
-	global $pagesTitles;
+}*/
+ob_start();
+function templateify(){//Runs at end, to put the page contents into a page template.
+	global $pagesTitles,$adminPagesTitles;
 	
-	if(array_key_exists(basename($_SERVER["SCRIPT_FILENAME"],".php"),$pagesTitles))
-		$title=$pagesTitles[basename($_SERVER["SCRIPT_FILENAME"],".php")];
-	else
-		$title="Not Found";
-	
-	$content=ob_get_contents();
-	ob_clean();
+	$pagename=basename($_SERVER["SCRIPT_FILENAME"],".php");
+	if(array_key_exists($pagename,$pagesTitles)){
+		$title=$pagesTitles[$pagename];
+		$content=ob_get_clean();
+	}
+	elseif(array_key_exists($pagename,$adminPagesTitles)&&userAccess("a")){
+		$title=$adminPagesTitles[$pagename]." [Admin-Only Page]";
+		$content=ob_get_clean();
+	}
+	else{
+		$title="404 Not Found";
+		$content="Oops, your page <i><a href='{$_SERVER["REQUEST_URI"]}'>{$_SERVER["REQUEST_URI"]}</a></i> wasn't found! D:<br>Try again?";
+		ob_clean();
+	}
 	
 	$nav="[&nbsp;&middot;&nbsp;";
 	foreach($pagesTitles as $p=>$t)
 		$nav.="<a href='$p.php'>$t</a>&nbsp;&middot;&nbsp;";
+	if(userAccess("a")){
+		$nav.="&middot;&nbsp;&middot;&nbsp;";
+		foreach($adminPagesTitles as $p=>$t)
+			$nav.="<a href='$p.php'>$t</a>&nbsp;&middot;&nbsp;";
+	}
 	$nav.="]";
 	
-	//tried OB which died for some reason... ob_start();
+	//tried OB to get file contents which died for some reason...
 	$template=file_get_contents(__DIR__."/html_template.php");
 	
 	global $VERSION_NUMBER;
@@ -162,6 +207,7 @@ function templateify(){
 register_shutdown_function("templateify");
 
 function error($description){
+	global $DEBUG_MODE;
 	ob_clean();
 	echo "An error occurred";
 	if($DEBUG_MODE)echo ": $description";
@@ -169,7 +215,7 @@ function error($description){
 
 
 
-function database_stats(){
+function database_stats(){//Note: huh hm try caching? eh, time the slowest parts of the code.
 	global $database,$ruleSet;
 	$ret="<div>Number of questions in database:";
 	$totalN=0;
