@@ -41,13 +41,14 @@ $checkboxoptions.='<b>Number of Questions</b> (max '.$RANDQ_MAX_QUESTIONS_AT_ONC
 <div id='questions'>
 <?php
 if($addRandStatus!="")echo $addRandStatus;
+//QID,isB,Subject,isSA,Question,MCW,MCX,MCY,MCZ,Answer
 else echo $Q->allToHTML(<<<HEREDOC
 <div class='question'>
-[QID %QID%]
+<span style='display:inline-block;width:40%;'>[QID %QID%]</span><span style='display:inline-block;width:59%;text-align:right;font-size:0.8em;'><a href="#" class="editbtn">[Edit]</a></span>
 <div>Mark as Bad: <input type="checkbox" name="markBad[]" value="%N%"/></div>
 <input type="hidden" name="qids[]" value="%QID%"/>
-<div style='font-weight:bold;text-align:center;'>%PART%</div>
-<div>%SUBJECT% <i>%TYPE%</i> %QUESTION%</div>
+<div style='font-weight:bold;text-align:center;' class="part">%PART%</div>
+<div><span class="subject">%SUBJECT%</span> <i><span class="type">%TYPE%</span></i> <span class="qtext">%QUESTION%</span></div>
 <div style="font-size:0.9em;">%MCOPTIONS%</div>
 <br>ANSWER: <span class='hiddenanswer'><span class='ans'>%ANSWER%</span> <span class='hov'>[hover to show]</span></span>
 <br>

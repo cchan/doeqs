@@ -7,8 +7,6 @@ function __autoload($class_name) {//Lovely magic function, autorequires the file
 	//for DB qIO filetoStr qParser
     require "classes/class.".str_replace(array("/","\\"),"",$class_name).".php";
 }
-$database=new DB;
-//$mobileDetect=new Mobile_Detect; //I don't know.
 
 
 function anyIndicesEmpty($array/*, var1, var2, ...,varN*/){//it's NOT anyIndicesNull. "" is empty.
@@ -76,7 +74,8 @@ function Array2DTranspose($arr){
 
 
 
-function session_total_destroy(){//Destroys a session according to the php.net method.
+session_start();
+function session_total_reset(){//Destroys a session according to the php.net method.
 	// Unset all of the session variables.
 	$_SESSION = array();
 
@@ -92,11 +91,10 @@ function session_total_destroy(){//Destroys a session according to the php.net m
 
 	// Finally, destroy the session.
 	session_destroy();
-}
-session_start();
-if (!isset($_SESSION['LAST_ACTIVITY']) || (time() - $_SESSION['LAST_ACTIVITY'] > $SESSION_TIMEOUT_MINUTES*60)) {// last request was more than 15 minutes ago
-	session_total_destroy();
 	session_start();
+}
+if (!isset($_SESSION['LAST_ACTIVITY']) || (time() - $_SESSION['LAST_ACTIVITY'] > $SESSION_TIMEOUT_MINUTES*60)) {// last request was more than 15 minutes ago
+	session_total_reset();
 }
 $_SESSION['LAST_ACTIVITY'] = time(); // update last activity time stamp
 
@@ -217,6 +215,7 @@ function error($description){
 
 function database_stats(){//Note: huh hm try caching? eh, time the slowest parts of the code.
 	global $database,$ruleSet;
+	if(!isSet($database))$database=new DB;
 	$ret="<div>Number of questions in database:";
 	$totalN=0;
 	$q=$database->query("SELECT Subject, COUNT(*) AS nQs FROM questions WHERE Deleted=0 GROUP BY Subject");

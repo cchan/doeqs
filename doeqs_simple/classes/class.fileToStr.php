@@ -16,7 +16,7 @@ class fileToStr{
 			//$database->query_assoc("LOAD DATA INFILE '%0%' INTO TABLE questions FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\r\n' IGNORE 1 LINES",($_FILE["file"]["tmp_name"]));
 			
 			default:
-				return "Unsupported file extension <i>$ext</i> - we currently support txt, html, doc, docx, odt, pdf.";
+				echo "Unsupported file extension <i>$ext</i> - we currently support txt, html, doc, docx, odt, pdf.";
 		}
 	}
 	

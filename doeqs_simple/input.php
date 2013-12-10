@@ -17,25 +17,28 @@ if(csrfVerify()&&(posted("copypaste")||isSet($_FILES["fileupload"])||posted("dir
 	}
 	else{
 		$qp=new qParser();
-		if(isSet($_POST["copypaste"]))$unparsed=$qp->parse($_POST["copypaste"]);
-		elseif(isSet($_POST["fileupload"])){
+		$error=false;
+		if(posted("copypaste"))$unparsed=$qp->parse($_POST["copypaste"]);
+		elseif(isSet($_FILES["fileupload"])){
 			$fs=new fileToStr();
 			if(is_array($_FILES["fileupload"]["tmp_name"])){//for multiple-supporting browsers
 				foreach($_FILES["fileupload"]["tmp_name"] as $ind=>$tmp_name){
 					$name=$_FILES["fileupload"]["name"][$ind];
 					echo "File $name: ";
+					if($name==""||$tmp_name==""){error("No file.");$error=true;continue;}
 					$unparsed.=$qp->parse($fs->convert($name,$tmp_name));
 					echo "<br>";
 				}
 			}
 			else $unparsed=$qp->parse($fs->convert($_FILES["fileupload"]["name"],$_FILES["fileupload"]["tmp_name"]));
 		}
-		else{error("Invalid form input");}
-		if(str_replace(array("\n","\r"," ","	","_"),"",$unparsed)!="")
-			echo "<br><br>Below, in the copy-paste section, are what remains in the document after detecting all the questions we could find.<br>";
-		else echo "<br><br>No unparsed question text found (that means we got every question). Yay!";
+		else{error("Invalid form input");$error=true;}
+		if($error==false)
+			if(str_replace(array("\n","\r"," ","	","_"),"",$unparsed)!="")
+				echo "<br><br>Below, in the copy-paste section, are what remains in the document after detecting all the questions we could find.<br>";
+			else
+				echo "<br><br>No unparsed question text found (that means we got every question). Yay!";
 	}
-	
 	echo '</div><br><br>';
 }
 
@@ -81,9 +84,7 @@ Enter some questions:
 		<?php }else{?>
 			Paste it all here:<br>
 		<?php }?>
-		<textarea name="copypaste" style="width:100%;height:10em;">
-			<?=preg_replace(['/[\r\n]+/','/[\_]+/'], ["\n",''],$unparsed);?>
-		</textarea><br>
+		<textarea name="copypaste" style="width:100%;height:10em;"><?=preg_replace(['/[\r\n]+/','/[\_]+/'], ["\n",''],$unparsed);?></textarea><br>
 		<input type="submit" value="Submit Question(s)"/>
 	</form>
 	
@@ -96,7 +97,7 @@ Enter some questions:
 		<div style="font-size:0.7em">(up to <?=$MAX_FILE_UPLOADS;?> files if your browser supports it)<br>
 		(up to <?=$UPLOAD_MAX_FILESIZE;?>MB file size)<br>
 		<i>We currently support txt, html, doc, docx, odt, and pdf.</i></div>
-		<input type="submit" name="fileupload" value="Upload"> <small>Be patient, this will take a while.</small><br>
+		<input type="submit" value="Upload"> <small>Be patient, this will take a while.</small><br>
 	</form>
 </div>
 

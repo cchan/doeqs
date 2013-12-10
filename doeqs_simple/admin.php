@@ -10,7 +10,7 @@ require_once "functions.php";
 if(csrfVerify()){
 	$_SESSION["admin"]=true;
 	if(isSet($_POST["logout"])){
-		session_total_destroy();
+		session_total_reset();
 		die("logged out");
 	}
 	elseif(isSet($_POST["truncQs"])){

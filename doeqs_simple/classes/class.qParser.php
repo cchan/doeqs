@@ -4,12 +4,13 @@ class qParser{
 	
 	//strParseQs - high-level question-parsing; accepts string of questions to parse, does whatever with them, and returns string of output.
 	public function parse($qstr){
-		global $database;
-		global $ruleSet;
+		global $database,$ruleSet;
+		if(!isSet($database))$database=new DB;
 		if(str_replace([" ","	","\n","\r"],"",$qstr)===""){echo "Error: No text submitted.";return "";}
-		if(strpos($qstr,"\n")===false){echo "An error occurred. ".$qstr;return;}//either means there's no linebreaks or something happened in fileToStr. Ugh.
 		
+		$t=microtime();
 		$nMatches=preg_match_all($this->qregex(), $qstr, $qtext);
+		echo '(TIME-millis:'.(microtime()-$t).':TIME)';
 		
 		$qs=new qIO();
 		for($i=0;$i<$nMatches;$i++){
@@ -40,14 +41,13 @@ class qParser{
 	private function qregex(){
 	//dafuq [in regexpal] it works fine except doesn't match mc questions where there's "how" or "law" in the question, or where there's "only" in X
 	//also, mislabeled MC as SA passes in no-linebreaks mode
-		$subjChoices='(BIO(?:LOGY)?|CHEM(?:ISTRY)?|PHYS(?:|ICS|ICAL SCIENCE)|MATH(?:EMATICS)?|E(?:SS|ARTHSCI|ARTH SCIENCE|ARTH (?:AND|&) SPACE(?: SCIENCE)?))';
-		$e='[\:\.\)\-]';//W. or W) or W- or W:. //can't have space because if has "asdfy asdf" as x, will catch "y "
-		$a='[\:\.\)\-]';//W. or W) or W- or W:.
+		global $ruleSet;//including SubjRegex
 		
+		$e='[\:\.\)]';//Endings: W. or W) or W- or W:. //can't have space because if has "asdfy asdf" as x, will catch "y "
 		$mcChoices='';
-		$choiceArr=array("W","X","Y","Z","ANSWER");
+		$choiceArr=array_merge($ruleSet["MCChoices"],array("ANSWER"));
 		for($i=0;$i<4;$i++)$mcChoices.=$choiceArr[$i].'\)((?:(?!'.$choiceArr[$i+1].'\))[^\n\r])*)\s*';
-		return '/(TOSS ?\-? ?UP|BONUS)\s*(?:([0-9]+)[\.\)\- ])?\s*'.$subjChoices.'\s*(?:Multiple Choice\s*((?:(?!W'.$e.')[^\n\r])*)\s*'.$mcChoices.'|Short Answer\s*((?:(?:(?!ANSWER'.$a.')[\s\S])*)(?:\s*[IVX0-9]+'.$e.'(?:(?!ANSWER'.$a.')(?![IVX0-9]+'.$e.')[^\n\r])*)*))\s*ANSWER'.$a.'*\s*([WXYZ]?)((?:[^\n\r])*)([\n\r]|$)/i';
+		return '/(TOSS ?\-? ?UP|BONUS)\s*(?:([0-9]+)[\.\)\- ])?\s*'.$ruleSet["SubjRegex"].'\s*(?:Multiple Choice\s*((?:(?!W'.$e.')[^\n\r])*)\s*'.$mcChoices.'|Short Answer\s*((?:(?:(?!ANSWER'.$e.')[\s\S])*)(?:\s*[IVX0-9]+'.$e.'(?:(?!ANSWER'.$e.')(?![IVX0-9]+'.$e.')[^\n\r])*)*))\s*ANSWER'.$e.'*\s*([WXYZ]?)((?:[^\n\r])*)([\n\r]|$)/i';
 	}
 	//for($i=0;$i<4;$i++)$mcChoices.=$choiceArr[$i].$e.'((?:(?!'.$choiceArr[$i+1].$e.')[\s\S])*)\s*';
 	//return '/(TOSS\-?UP|BONUS)\s*(?:([0-9]+)[\.\)\- ])?\s*'.$subjChoices.'\s*(?:Multiple Choice\s*((?:(?!W'.$e.')[\s\S])*)\s*'.$mcChoices.'|Short Answer\s*((?:(?:(?!ANSWER'.$a.')[^\s\S])*)(?:\s*[IVX0-9]+'.$e.'(?:(?!ANSWER'.$a.')(?![IVX0-9]+'.$e.')[\s\S])*)*))\s*ANSWER'.$a.'*\s*((?:(?![\n\r]|$|TOSS\-?UP|BONUS)[\s\S])*)/i';
