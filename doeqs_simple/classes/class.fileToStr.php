@@ -27,7 +27,7 @@ class fileToStr{
 		$fileHandle = fopen($filename, "r");
 		$line = @fread($fileHandle, filesize($filename));   
 		$lines = explode(chr(0x0D),$line);
-		$outtext = "";
+		$outtext = '';
 		foreach($lines as $thisline)
 		  {
 			$pos = strpos($thisline, chr(0x00));
@@ -37,7 +37,7 @@ class fileToStr{
 				$outtext .= $thisline."\n";
 			  }
 		  }
-		 $outtext = preg_replace("/[^a-zA-Z0-9\s\,\.\-\n\r\t@\/\_\(\)]/","",$outtext);
+		 $outtext = preg_replace("/[^a-zA-Z0-9\s\,\.\-\n\r\t@\/\_\(\)]/",'',$outtext);
 		return $outtext;
 	}
 	
@@ -90,7 +90,7 @@ class fileToStr{
 		}
 
 		// In case of failure return empty string
-		return "";
+		return '';
 	}
 
 }

@@ -1,18 +1,18 @@
 <?php
-require_once "functions.php";
+require_once 'functions.php';
 
 
-$unparsed="";
+$unparsed='';
 
 if(csrfVerify()&&(posted("copypaste")||isSet($_FILES["fileupload"])||posted("directentry"))){
 	echo '<div style="font-size:0.8em;border:solid 1px #000000;display:inline-block;padding:5px;">
 		<i>We are processing your questions right now...</i><br><br>';
 	if(isSet($_POST["directentry"])){
-		$err="";
+		$err='';
 		try{$q=new qIO();$q->addByArray($_POST["Q"]);$q->commit();}
 		catch(Exception $e){$err="Error: ".$e->getMessage();}
 		
-		if($err=="")echo "Questions entered successfully, with Question-IDs <b>".arrayToRanges($q->getQIDs())."</b><br><br><br>";
+		if($err=='')echo "Questions entered successfully, with Question-IDs <b>".arrayToRanges($q->getQIDs())."</b><br><br><br>";
 		else echo $err;
 	}
 	else{
@@ -25,7 +25,7 @@ if(csrfVerify()&&(posted("copypaste")||isSet($_FILES["fileupload"])||posted("dir
 				foreach($_FILES["fileupload"]["tmp_name"] as $ind=>$tmp_name){
 					$name=$_FILES["fileupload"]["name"][$ind];
 					echo "File $name: ";
-					if($name==""||$tmp_name==""){error("No file.");$error=true;continue;}
+					if($name==''||$tmp_name==''){error("No file.");$error=true;continue;}
 					$unparsed.=$qp->parse($fs->convert($name,$tmp_name));
 					echo "<br>";
 				}
@@ -34,7 +34,7 @@ if(csrfVerify()&&(posted("copypaste")||isSet($_FILES["fileupload"])||posted("dir
 		}
 		else{error("Invalid form input");$error=true;}
 		if($error==false)
-			if(str_replace(array("\n","\r"," ","	","_"),"",$unparsed)!="")
+			if(str_replace(array("\n","\r"," ","	","_"),'',$unparsed)!='')
 				echo "<br><br>Below, in the copy-paste section, are what remains in the document after detecting all the questions we could find.<br>";
 			else
 				echo "<br><br>No unparsed question text found (that means we got every question). Yay!";
@@ -48,7 +48,7 @@ Enter some questions:
 <div id="question-wrapper">
 	<h2>Direct Entry</h2>
 	<form id="directentry" action="input.php" method="POST" autocomplete="off">
-		<input type="hidden" name="ver" value="<?=csrfCode();?>"/>
+		<input type="hidden" name='ver' value="<?=csrfCode();?>"/>
 		<?php foreach($ruleSet["QParts"] as $qpartval=>$qpart){?>
 			<fieldset>
 				<legend style="text-align:center;"><b><?php echo $qpart;?></b></legend>
@@ -56,8 +56,8 @@ Enter some questions:
 				<select class="subjsel" name="Q[<?php echo $qpartval;?>][Subject]"><?php foreach($ruleSet["Subjects"] as $subjval=>$subj)echo "<option value='$subjval'>$subj</option>";?></select>
 				<select class="typesel" name="Q[<?php echo $qpartval;?>][isSA]"><?php foreach($ruleSet["QTypes"] as $typeval=>$type)echo "<option value='$typeval'>$type</option>";?></select><br>
 				<textarea name="Q[<?php echo $qpartval;?>][Question]" placeholder="Your question here..."></textarea><br>
-				<div class="mcwrap"><?php foreach($ruleSet["MCChoices"] as $choiceval=>$choice)echo "<input type='radio' name='Q[$qpartval][MCa]' value='$choiceval'/>$choice) <input type='text' name='Q[$qpartval][MC$choice]'/><br>";?></div>
-				ANSWER: <input type="text" name="Q[<?php echo $qpartval;?>][Answer]" placeholder="Your answer here..." value=""/><br>
+				<div class="mcwrap"><?php foreach($ruleSet['MCChoices'] as $choiceval=>$choice)echo "<input type='radio' name='Q[$qpartval][MCa]' value='$choiceval'".(($choiceval==0)?' checked':'')."/>$choice) <input type='text' name='Q[$qpartval][MC$choice]'/><br>";?></div>
+				ANSWER: <input type="text" name="Q[<?php echo $qpartval;?>][Answer]" placeholder="Your answer here..." value=''/><br>
 			</fieldset>
 		<?php }?><br>
 		<input type="submit" name="directentry" value="Submit Question"/>
@@ -66,8 +66,8 @@ Enter some questions:
 	<br><br>
 	<h2>Copy-Paste</h2>
 	<form id="copypaste" action="input.php" method="POST" autocomplete="off">
-		<input type="hidden" name="ver" value="<?=csrfCode();?>"/>
-		<?php if(str_replace(array("\n","\r"," ","	"),"",$unparsed)!=""){?>
+		<input type="hidden" name='ver' value="<?=csrfCode();?>"/>
+		<?php if(str_replace(array("\n","\r"," ","	"),'',$unparsed)!=''){?>
 			<div style='font-size:0.8em;'>
 			Common syntax errors include:
 			<ul>
@@ -78,7 +78,7 @@ Enter some questions:
 			<li>really horrible misspellings of keywords</li>
 			</ul>
 			<i>Also note that sometimes the detector will reject perfectly valid questions; try just resubmitting or moving on.</i>
-			<div><b>ALSO NOTE THAT AT THE MOMENT MULTIPLE CHOICE PARSING DOES NOT WORK</b></div> 
+			<div><b>ALSO NOTE THAT AT THE MOMENT MULTIPLE CHOICE PARSING SOMETIMES RANDOMLY DOES NOT WORK</b></div> 
 			</div>
 			<br>
 		<?php }else{?>
@@ -91,7 +91,7 @@ Enter some questions:
 	<br><br>
 	<h2>File Upload</h2>
 	<form id="fileupload" action="input.php" method="POST" enctype="multipart/form-data">
-		<input type="hidden" name="ver" value="<?=csrfCode();?>"/>
+		<input type="hidden" name='ver' value="<?=csrfCode();?>"/>
 		Select file to upload:<br>
 		<input type="file" name="fileupload[]" multiple="multiple"><br>
 		<div style="font-size:0.7em">(up to <?=$MAX_FILE_UPLOADS;?> files if your browser supports it)<br>
@@ -104,7 +104,7 @@ Enter some questions:
 <script>
 $(function(){
 	$("input[type='submit']").click(function(e){
-		var maxUpload=<?=$MAX_FILE_UPLOADS;?>
+		var maxUpload=<?=$MAX_FILE_UPLOADS;?>;
 		var fileUpload = $(this).siblings("input[type='file']");
 		var sum=0;
 		fileUpload.each(function(){

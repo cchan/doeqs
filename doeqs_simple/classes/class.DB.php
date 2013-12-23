@@ -8,7 +8,7 @@
 //class DB //Database access class, which both makes it securer (replacement + checking) and don't have to specify everything each time opening connection.
 	//Construct it to open connection to $db passed in, or defaults to setDB database set.
 	//function query_assoc($template,$replace1,$replace2,...) //Submits a query, checking all replaceN for SQL validity and then replacing all occurrences of %N% in $templaet with replaceN. If any of replaceN have strings like %4% in them... just go away. Returns fetch_assoc().
-		// ***NOTE you must quotate the template around the %N%'s yourself. Meaning, `` for weird db/table/col names, "" for any string values, no quotes for numbers
+		// ***NOTE you must quotate the template around the %N%'s yourself. Meaning, `` for weird db/table/col names, '' for any string values, no quotes for numbers
 		// ***NOTE please no destructive queries :'(
 		// ***NOTE all $replaceN are htmlentities()'d then mysqli_real_escape_string()'d
 	//Unset it to close connection
@@ -42,9 +42,9 @@ class DB{
 		unset($this->con);
 	}
 	public function sanitize($in){
-		if($in===""||$in===NULL)return '""';
+		if($in===''||$in===NULL)return 'NULL';
 		//HTMLENTITIES TROUBLESHOOTING
-		if($in===true)$in="1";elseif($in===false)$in="0";//Explicit typecasting.
+		if($in===true)$in="1";elseif($in===false)$in='0';//Explicit typecasting.
 		//Dealing with weird characters
 		$search = array(chr(145), //dumb single quotes
 							chr(146), //dumb single quotes
@@ -59,13 +59,14 @@ class DB{
 		$processed=str_replace($search, $replace, $in);
 		
 		$escaped=$this->con->real_escape_string(htmlentities($processed,ENT_QUOTES|ENT_HTML401,'ISO-8859-1'));
-		if($escaped==""){throw new Exception(var_dump($in)."HTMLENTITIES empty for string: ");};
+		if($escaped==''){throw new Exception(var_dump($in).'HTMLENTITIES empty for string: ');};
 		return '"'.$escaped.'"';
 	}
 	public function query($template,$replaceArr=array()){//Is this safe??...
+		if(!is_array($replaceArr))error("Not array");
 		foreach($replaceArr as $ind=>$replace)//Replace all the %% var things
 			$template=str_replace("%$ind%",$this->sanitize($replace),$template);//ZERO-INDEXED
-		if(isDestructiveQuery($template))throw new Exception("DB: GRUMPYCAT NO - destructive query");
+		if(isDestructiveQuery($template))throw new Exception('DB: GRUMPYCAT NO - destructive query');
 		
 		if(($qresult=$this->con->query($template))===false)throw new Exception("DB: query failed: $template");
 		$this->insert_id=$this->con->insert_id;

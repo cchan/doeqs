@@ -7,7 +7,7 @@
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
         <title>%title% | DOE Question Database %version%</title>
-        <meta name="description" content="">
+        <meta name="description" content=''>
         <meta name="viewport" content="width=device-width">
 
         <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
@@ -42,13 +42,13 @@
 			<script>
 			$(function(){
 				$("#bugrept #hidden").hide();
-				$("#bugrept #clicker").text("[show]").click(function(){
-					if(this.innerHTML=="[show]"){
-						this.innerHTML="[hide]";
+				$("#bugrept #clicker").text("[expand]").click(function(){
+					if(this.innerHTML=="[expand]"){
+						this.innerHTML="[close]";
 						$(this).siblings("#hidden").show();
 					}
 					else{
-						this.innerHTML="[show]";
+						this.innerHTML="[expand]";
 						$(this).siblings("#hidden").hide();
 					}
 				});

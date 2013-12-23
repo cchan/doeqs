@@ -20,16 +20,16 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 		if(!is_null($this->Questions))foreach($this->Questions as $q)if($q[0]==0)throw new Exception("Uncommitted added questions.");
 	}
 	public function addRand($parts,$subjects,$types,$num){//arrays of the numbers to include eg subj [0,1,4] for b,c,e
-		global $database, $MARK_AS_BAD_THRESHOLD, $ruleSet, $RANDQ_MAX_QUESTIONS_AT_ONCE;
+		global $database, $MARK_AS_BAD_THRESHOLD, $ruleSet, $MAX_NUMQS;
 		
-		if(!is_numeric($num)||!($num=intval($num)))$num=$DEFAULT_NUMQS;
-		if($num<1)$num=1;if($num>$RANDQ_MAX_QUESTIONS_AT_ONCE)$num=$RANDQ_MAX_QUESTIONS_AT_ONCE;
+		if(!val_int($num))$num=$DEFAULT_NUMQS;
+		$num=normRange(intval($num),1,$MAX_NUMQS);
 		
 		$query="SELECT QID, isB, Subject, isSA, Question, MCW, MCX, MCY, MCZ, Answer FROM questions WHERE MarkBad < $MARK_AS_BAD_THRESHOLD AND Deleted=0";
 		$stuff=array("QParts"=>$parts,"Subjects"=>$subjects,"QTypes"=>$types);
 		$counts=array("QParts"=>count($ruleSet["QParts"]),"Subjects"=>count($ruleSet["Subjects"]),"QTypes"=>count($ruleSet["QTypes"]));
 		$dbname=array("QParts"=>"isB","Subjects"=>"Subject","QTypes"=>"isSA");
-		$checkboxoptions="";
+		$checkboxoptions='';
 		foreach($counts as $name=>$howmany){
 			$stuff[$name]=array_values(array_unique($stuff[$name]));
 			if(count($stuff[$name])<$howmany-1 && count($stuff[$name])>0){
@@ -50,8 +50,8 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 		
 		$i=count($this->Questions);
 		while($row=$result->fetch_assoc()){
-			$this->Questions[]=array($row["QID"],$row["isB"],$row["Subject"],$row["isSA"],
-				$row["Question"],$row["MCW"],$row["MCX"],$row["MCY"],$row["MCZ"],$row["Answer"]);
+			$this->Questions[]=array($row["QID"],$row["isB"],$row["Subject"],$row['isSA'],
+				$row["Question"],$row["MCW"],$row["MCX"],$row["MCY"],$row["MCZ"],$row['Answer']);
 		}
 		$this->updateIs(range($i,count($this->Questions)-1),"TimesViewed=TimesViewed+1");
 		if($result->num_rows!=$num)return "More questions requested than such questions exist.";
@@ -61,8 +61,7 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 		
 		$query="SELECT QID, isB, Subject, isSA, Question, MCW, MCX, MCY, MCZ, Answer FROM questions WHERE (";
 		foreach($qids as $i=>$qid){
-			if(!(is_numeric($qid)&&$qid==intval($qid)&&intval($qid)>0))throw new Exception("Invalid QID $qid.");
-			$qid=intval($qid);
+			if(!val_int($qid)||intval($qid)<=0)throw new Exception("Invalid QID $qid.");
 			$query.=" QID=".intval($qid)." OR ";
 		}
 		$query.=" 0) AND Deleted=0 LIMIT ".count($qids);
@@ -73,8 +72,8 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 		if($result->num_rows<count($qids))throw new Exception("QIDs do not exist.");
 		
 		while($row=$result->fetch_assoc()){
-			$this->Questions[]=array($row["QID"],$row["isB"],$row["Subject"],$row["isSA"],
-				$row["Question"],$row["MCW"],$row["MCX"],$row["MCY"],$row["MCZ"],$row["Answer"]);
+			$this->Questions[]=array($row["QID"],$row["isB"],$row["Subject"],$row['isSA'],
+				$row["Question"],$row["MCW"],$row["MCX"],$row["MCY"],$row["MCZ"],$row['Answer']);
 		}
 	}
 	public function addByArray($paramsArray){//Add to the array of questions, each from array or ID.
@@ -89,37 +88,37 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 			if(!is_array($params))error("Wrong parameter type.");//Given all the needed parameters in an array.
 			
 			$required=["isB","Subject","isSA","Question"];
-			//$types=[[0,1],range(0,count($ruleSet["Subjects"])),[0,1],"","","","","","",""];
+			//$types=[[0,1],range(0,count($ruleSet["Subjects"])),[0,1],'','','','','','',''];
 			if(count(array_intersect_key(array_flip($required),$params))!=count($required))error("Missing parameters.");
 			
 			//Check the validity of these.
 			//Handle JS-side too...
-			$params["isB"]=($params["isB"]==1)?1:0;
-			if(($params["Subject"]=intval($params["Subject"]))===false||!array_key_exists($params["Subject"],$ruleSet["Subjects"]))error("Invalid subject");
-			$params["isSA"]=($params["isSA"]==1)?1:0;
-			if($params["Question"]=="")error("Blank question");
+			$params["isB"]=($params["isB"]==1);
+			if(!val_int($params["Subject"])||!array_key_exists($params["Subject"],$ruleSet["Subjects"]))error("Invalid subject");
+			$params['isSA']=($params['isSA']==1);
+			if($params["Question"]=='')error("Blank question");
 			
 			//Deal with MC vs SA answers
-			if(!$params["isSA"]){
-				$required=["MCW","MCX","MCY","MCZ","MCa"];
+			if(!$params['isSA']){
+				$required=['MCW','MCX','MCY','MCZ','MCa'];
 				if(count(array_intersect_key(array_flip($required),$params))!=count($required))error("Missing parameters.");
-				for($i=0;$i<count($ruleSet["MCChoices"]);$i++)
-					if(empty($params["MC".$ruleSet["MCChoices"][$i]]))
-						error("Some multiple choice blank");
-				if(!(is_int($params["MCa"])&&array_key_exists($params["MCa"],$ruleSet["MCChoices"])))
-					error("Invalid MC answer chosen");
-				$params["Answer"]=$params["MCa"];
+				for($i=0;$i<count($ruleSet['MCChoices']);$i++)
+					if(empty($params["MC".$ruleSet['MCChoices'][$i]]))
+						error('Some multiple choice blank');
+				if(!(array_key_exists('MCa',$params)&&is_int($params['MCa'])&&array_key_exists($params['MCa'],$ruleSet['MCChoices'])))
+					error('Invalid MC answer chosen');
+				$params['Answer']=$params['MCa'];
 			}else{
-				if(!array_key_exists("Answer",$params))error("Missing parameters.");
-				if($params["Answer"]=="")error("Blank answer");
+				if(!array_key_exists('Answer',$params))error("Missing parameters.");
+				if($params['Answer']=='')error("Blank answer");
 				$params["MCW"]=$params["MCX"]=$params["MCY"]=$params["MCZ"]=NULL;
 			}
 			
-			var_dump($params);
+			//var_dump($params);
 			//Hm. Start value for QID = 0.
-			$this->Questions[]=array(0,$params["isB"],$params["Subject"],$params["isSA"],
+			$this->Questions[]=array(0,$params["isB"],$params["Subject"],$params['isSA'],
 				$params["Question"],$params["MCW"],$params["MCX"],$params["MCY"],$params["MCZ"],
-				$params["Answer"]);
+				$params['Answer']);
 		}
 	}
 	
@@ -148,12 +147,12 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 	}
 	
 	public function toHTML($i,$formatstr){//Return nice HTML for question $i, based on $formatstr replacements.
-		if(empty($this->Questions)||count($this->Questions)==0)return "";
+		if(empty($this->Questions)||count($this->Questions)==0)return '';
 		global $ruleSet;
 		$MCOptions='';
 		//QID,isB,Subject,isSA,Question,MCW,MCX,MCY,MCZ,Answer
 		if(!$this->Questions[$i][3])
-			foreach($ruleSet["MCChoices"] as $ind=>$letter)
+			foreach($ruleSet['MCChoices'] as $ind=>$letter)
 				$MCOptions.='<div>'.$letter.") ".$this->Questions[$i][5+$ind].'</div>';
 		return str_replace(
 			array(
@@ -183,7 +182,7 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 		//--todo--test xss
 	}
 	public function allToHTML($formatstr){//Return nice HTML
-		if(empty($this->Questions)||count($this->Questions)==0)return "";
+		if(empty($this->Questions)||count($this->Questions)==0)return '';
 		$ret='';
 		for($i=0;$i<count($this->Questions);$i++)$ret.=$this->toHTML($i,$formatstr);
 		return $ret;
@@ -226,7 +225,7 @@ class qIO{//Does all the validation... for you! By not trusting you at all. ;)
 		if(empty($this->Questions)||count($this->Questions)==0)return;
 		//$setstr is risky.
 		global $database;
-		$wherestr="";
+		$wherestr='';
 		foreach($is as $i)
 			$wherestr.=" QID=".$this->Questions[$i][0]." OR ";
 		$wherestr=substr($wherestr,0,-3);

@@ -1,31 +1,36 @@
 <?php
-require_once "functions.php";
+require_once 'functions.php';
 
 //separate face of this page: "Are you sure?"
 //echo $_SESSION["admin-ver"]=genVerCode();
 //if($_POST["admin-ver"]===$_SESSION["admin-ver"])
 
 //for particularly dangerous ones "Reenter password to do this action"
-
+echo '<b style="color:green">';
 if(csrfVerify()){
 	$_SESSION["admin"]=true;
+	if(!isSet($database))$database=new DB;
 	if(isSet($_POST["logout"])){
 		session_total_reset();
 		die("logged out");
 	}
 	elseif(isSet($_POST["truncQs"])){
-		$database->query_assoc("TRUNCATE TABLE questions");
-		echo "All questions erased.<br><br>";
+		$database->query("TRUNCATE TABLE questions");
+		echo "TRUNCATE TABLE executed.<br><br>";
 	}
 	elseif(isSet($_POST["timesViewed"])){
-		$database->query_assoc("UPDATE questions SET TimesViewed=0");
+		$database->query("UPDATE questions SET TimesViewed=0");
 		echo "All questions' times-viewed-s zeroed.<br><br>";
 	}
 	elseif(isSet($_POST["markBad"])){
-		$database->query_assoc("UPDATE questions SET MarkBad=0");
+		$database->query("UPDATE questions SET MarkBad=0");
 		echo "All questions' marked-as-bad-s zeroed.<br><br>";
 	}
-	elseif(isSet($_POST["dbInt"])){
+	elseif(isSet($_POST["optimizeTables"])){
+		$database->query("OPTIMIZE TABLE users,questions");
+		echo "OPTIMIZE TABLE executed<br><br>";
+	}
+	elseif(isSet($_POST["qInt"])){
 	//Subject in {0,1,2,3,4}
 	//isB and isSA in {0,1}
 	//Question not blank or null
@@ -43,21 +48,35 @@ if(csrfVerify()){
 	//verifies nonexistence of any other files
 	}
 }
+echo '</b>';
 	
 	
-	$filesTotalSize="no idea";
+	$filesTotalSize="idk ";
 	//calculated thru system commands or something? Since if just tabulates directory doesn't count tmp files and such
 ?>
 <form action="admin.php" method="POST">
-	<input type="hidden" name="ver" value="<?=csrfCode();?>"/>
+	<input type="hidden" name='ver' value="<?=csrfCode();?>"/>
 	<fieldset>
 		<legend>Database</legend>
-		<?=database_stats();?>
-		<?php //Do a separate CONFIRM page ?>
-		<input type="submit" name="truncQs" value="Delete All Questions" class="confirm"/><br>
-		<input type="submit" name="timesViewed" value="Reset TimesVieweds" class="confirm"/><br>
-		<input type="submit" name="markBad" value="Reset Marked-As-Bad's" class="confirm"/><br>
-		<input type="submit" name="dbInt" value="Database Integrity Check" disabled/>
+		<fieldset>
+			<legend>Users</legend>
+			<?php 
+				if(!isSet($database))$database=new DB;
+				$q=$database->query_assoc('SELECT COUNT(*) AS n FROM users');
+				echo "<div>Number of users in database: <b>{$q['n']}</b></div>";
+			?>
+		</fieldset>
+		<fieldset>
+			<legend>Questions</legend>
+			<?=database_stats();?>
+			<?php //Do a separate CONFIRM page ?>
+			<input type="submit" name="truncQs" value="Delete All Questions" class="confirm"/><br>
+			<input type="submit" name="timesViewed" value="Reset TimesVieweds" class="confirm"/><br>
+			<input type="submit" name="markBad" value="Reset Marked-As-Bad's" class="confirm"/><br>
+			<input type="submit" name="qInt" value="Integrity Check" disabled/>
+		</fieldset>
+		<input type="submit" name="optimizeTables" value="Optimize Tables"/><br>
+		<?php //pma link ?>
 	</fieldset>
 	<fieldset>
 		<legend>Server Files</legend>

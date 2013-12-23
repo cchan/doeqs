@@ -25,9 +25,9 @@ $ruleSet=array(
 	"TypeChars"=>str_split('sm'),
 	"PartChars"=>str_split('tb'),
 );
-$RANDQ_MAX_QUESTIONS_AT_ONCE=25;//How many questions can you fetch per pageload?
 $MARK_AS_BAD_THRESHOLD=2;//How many times can a question can be marked bad until being ignored?
 $SESSION_TIMEOUT_MINUTES=15;
+$MAX_NUMQS=25;//How many questions can you fetch per pageload?
 $DEFAULT_NUMQS=5;
 
 $UPLOAD_MAX_FILESIZE = 2;ini_set('upload_max_filesize',$UPLOAD_MAX_FILESIZE);//MB

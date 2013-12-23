@@ -2,14 +2,14 @@
 //functions.php
 //Any useful functions.
 
-require_once "conf/config.php";
+require_once 'conf/config.php';
 function __autoload($class_name) {//Lovely magic function, autorequires the file when you attempt to construct the class
 	//for DB qIO filetoStr qParser
-    require "classes/class.".str_replace(array("/","\\"),"",$class_name).".php";
+    require 'classes/class.'.str_replace(array('/',"\\"),'',$class_name).'.php';
 }
 
 
-function anyIndicesEmpty($array/*, var1, var2, ...,varN*/){//it's NOT anyIndicesNull. "" is empty.
+function anyIndicesEmpty($array/*, var1, var2, ...,varN*/){//it's NOT anyIndicesNull. '' is empty.
 	$args=func_get_args();
 	array_shift($args);//shift off the $array one
 	foreach($args as $arg)
@@ -26,6 +26,21 @@ function randomizeArr($arr){
 	return $arr;
 }
 
+//Integers
+function val_int($n){
+	if(!is_numeric($n)||intval($n)!=$n)
+		return false;
+	return true;
+}
+function normRange($n,$a,$b){
+	$n=intval($n);
+	if($a>$b)error("invalid range");
+	if($n<$a)return $a;
+	if($n>$b)return $b;
+	return $n;
+}
+
+//Data
 function posted(){
 	$args=func_get_args();
 	foreach($args as $arg)
@@ -47,10 +62,10 @@ function sessioned(){
 
 
 function arrayToRanges($arr){//Converts [1,2,3,5,6,8,9,10] to "1-3, 5-6, 8-10"
-	if(count($arr)==0)return "";
+	if(count($arr)==0)return '';
 	if(count($arr)==1)return $arr[0];
 	sort($arr);
-	$string="";
+	$string='';
 	$string.=$arr[0];
 	for($i=1;$i < count($arr);$i++){
 		if($arr[$i] > $arr[$i-1]+1){
@@ -81,11 +96,11 @@ function session_total_reset(){//Destroys a session according to the php.net met
 
 	// If it's desired to kill the session, also delete the session cookie.
 	// Note: This will destroy the session, and not just the session data!
-	if (ini_get("session.use_cookies")) {
+	if (ini_get('session.use_cookies')) {
 		$params = session_get_cookie_params();
 		setcookie(session_name(), '', time() - 42000,
-			$params["path"], $params["domain"],
-			$params["secure"], $params["httponly"]
+			$params['path'], $params['domain'],
+			$params['secure'], $params['httponly']
 		);
 	}
 
@@ -99,64 +114,7 @@ if (!isset($_SESSION['LAST_ACTIVITY']) || (time() - $_SESSION['LAST_ACTIVITY'] >
 $_SESSION['LAST_ACTIVITY'] = time(); // update last activity time stamp
 
 
-function hashEquals($a,$b){
-	return hash("whirlpool",(string)$a)==hash("whirlpool",(string)$b);
-}
-
-
-function genVerCode(){
-	$length=rand(48,64);//varying length ^^
-    $c = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';$cl = strlen($c);
-    $s = '';
-    for($i=0;$i<$length;$i++)$s.=$c[rand(0,$cl-1)];
-	return $s;
-}
-function csrfVerify(){//Checks CSRF code validity, and returns whether to proceed. The return value is static.
-	static $valid=NULL;
-	if(is_null($valid)){
-		if(posted("ver")&&sessioned("ver")&&hashEquals($_POST["ver"],$_SESSION["ver"])){
-			unset($_POST["ver"],$_SESSION["ver"]);
-			$valid=true;
-		}
-		else $valid=false;
-		unset($_POST["ver"],$_SESSION["ver"]);
-	}
-	return $valid;
-	//--todo-- Exceptions are bad and messy and not being caught. They're not meant to propagate all the way up.
-}
-function csrfCode(){//Returns randomly generated CSRF code. The return value is static.
-	static $code="";
-	if(sessioned("ver")&&$code===$_SESSION["ver"])return $code;
-	
-    return ($code=$_SESSION["ver"]=genVerCode());
-}
-
-//In order of precedence:
-//a=admin
-//c=captain
-//u=regular user
-//x=not logged in
-
-//$_SESSION["user_verification_code"]="";
-function userAccess($minPrivilegeLevel){
-	//To be made into database table Users:{email,pass,level}
-	$pass=array(
-	"moo"=>"moo234",
-	);
-	$level=array(
-	"moo"=>"a",
-	);
-	$hierarchy="xuca";//hierarchy, from lowest to highest
-	
-	if(count($minPrivilegeLevel)!==1)error("Invalid permission level '$minPrivilegeLevel'");
-	if(!sessioned("user"))$nUser=0;
-	else $nUser=strpos($hierarchy,$level[$_SESSION["user"]]);
-	$nAllowed=strpos($hierarchy,$minPrivilegeLevel);
-	if($nUser===false)error("Invalid db permission level '{$level[$_SESSION["user"]]}'");
-	if($nAllowed===false)error("Invalid input permission level '$minPrivilegeLevel'");
-	else return $nUser>=$nAllowed;
-}
-
+require_once 'accountManagement.php';
 
 
 /*if (version_compare(PHP_VERSION, '5.4.0', '>=')) {//from php.net
@@ -169,30 +127,32 @@ ob_start();
 function templateify(){//Runs at end, to put the page contents into a page template.
 	global $pagesTitles,$adminPagesTitles;
 	
-	$pagename=basename($_SERVER["SCRIPT_FILENAME"],".php");
+	$pagename=basename($_SERVER['SCRIPT_FILENAME'],'.php');
 	if(array_key_exists($pagename,$pagesTitles)){
 		$title=$pagesTitles[$pagename];
 		$content=ob_get_clean();
 	}
-	elseif(array_key_exists($pagename,$adminPagesTitles)&&userAccess("a")){
-		$title=$adminPagesTitles[$pagename]." [Admin-Only Page]";
+	elseif(array_key_exists($pagename,$adminPagesTitles)&&userAccess('a')){
+		$title=$adminPagesTitles[$pagename].' [Admin-Only Page]';
 		$content=ob_get_clean();
 	}
 	else{
-		$title="404 Not Found";
-		$content="Oops, your page <i><a href='{$_SERVER["REQUEST_URI"]}'>{$_SERVER["REQUEST_URI"]}</a></i> wasn't found! D:<br>Try again?";
+		$title='404 Not Found';
+		$content="Oops, your page <i><a href='{$_SERVER['REQUEST_URI']}'>{$_SERVER['REQUEST_URI']}</a></i> wasn't found! D:<br>Try again?";
 		ob_clean();
 	}
 	
-	$nav="[&nbsp;&middot;&nbsp;";
+	$nav="[";
 	foreach($pagesTitles as $p=>$t)
-		$nav.="<a href='$p.php'>$t</a>&nbsp;&middot;&nbsp;";
-	if(userAccess("a")){
-		$nav.="&middot;&nbsp;&middot;&nbsp;";
+		$nav.="&nbsp;&middot;&nbsp;<a href='$p.php'>$t</a>";
+	if(userAccess('a')){
+		$nav.='&nbsp;&mdash;&nbsp;';
 		foreach($adminPagesTitles as $p=>$t)
-			$nav.="<a href='$p.php'>$t</a>&nbsp;&middot;&nbsp;";
+			$nav.="<a href='$p.php'>$t</a>";
 	}
-	$nav.="]";
+	$nav.='&nbsp;&middot;&nbsp;]';
+	if(userAccess('u'))$nav.='&nbsp;&nbsp;&nbsp;<form action="login.php" method="POST" style="display:inline-block;"><input type="hidden" name="ver" value="<?=csrfCode();?>"/><input type="submit" name="logout" value="Log Out" /></form>';
+
 	
 	//tried OB to get file contents which died for some reason...
 	$template=file_get_contents(__DIR__."/html_template.php");
