@@ -1,41 +1,58 @@
 <?php
-//config.php - Any configuration stuff.
-//Various settings - most importantly, DEBUG_MODE. Change to false for production version.
-//function posted($postvarname1,$postvarname2,...) //Returns whether all of those are existent $_POST variables. (ie $_POST[$postvarname1],...)
-//function getted($getvarname1,$getvarname2,...) //Returns whether all of those are existent $_GET variables. (ie $_GET[$getvarname1],...)
+/*
+config.php
 
-$VERSION_NUMBER="0.2.1";
+Any configuration stuff.
+*/
+
 
 $DEBUG_MODE=false;//True if want lots of output. False on real production.
+
+/**********************METADATA*********************/
+$VERSION_NUMBER='0.2.1';
+$WEBMASTER_EMAIL='moose54321@gmail.com';
 date_default_timezone_set("America/Toronto");//(No Boston)
 
+/************************SESSION*********************/
+$SESSION_TIMEOUT_MINUTES=15;
+//$MAX_REQUESTS_PER_MINUTE=30;//Still to be implemented. What's a good number, and what's a good response?
+
+
+/********************DATABASE ACCESS*******************/
 //pointlessbutton.xp3.biz settings are the default.
 $DB_DOMAIN = "localhost";
 $DB_UNAME = "621516";
 $DB_PASSW = "dooba"."head".(5*(128*5+7)%1000+1000);
 $DB_DB = "621516";
 
-$ruleSet=array(
+/***********************DOEQS************************/
+$ruleSet=array(//...to be honest, this is annoying.
 	"Subjects"=>array("BIOLOGY","CHEMISTRY","PHYSICS","MATHEMATICS","EARTH AND SPACE SCIENCE"),
 	"SubjRegex"=>'(BIO(?:LOGY)?|CHEM(?:ISTRY)?|PHYS(?:|ICS|ICAL SCIENCE)|MATH(?:EMATICS)?|E(?:SS|ARTHSCI|ARTH SCIENCE|ARTH (?:AND|&) SPACE(?: SCIENCE)?))',
 	"QTypes"=>array("Multiple Choice","Short Answer"),
 	"QParts"=>array("TOSS-UP","BONUS"),
 	"MCChoices"=>array("W","X","Y","Z"),
 	"SubjChars"=>str_split('bcpme'),
-	"TypeChars"=>str_split('sm'),
+	"TypeChars"=>str_split('ms'),
 	"PartChars"=>str_split('tb'),
 );
-$MARK_AS_BAD_THRESHOLD=2;//How many times can a question can be marked bad until being ignored?
-$SESSION_TIMEOUT_MINUTES=15;
-$MAX_NUMQS=25;//How many questions can you fetch per pageload?
-$DEFAULT_NUMQS=5;
+$MARK_AS_BAD_THRESHOLD=2;//RANDQ: How many times can a question can be marked bad until being ignored?
+$MAX_NUMQS=25;//RANDQ: How many questions can you fetch per pageload?
+$DEFAULT_NUMQS=5;//RANDQ: Default number of questions to fetch
 
+/****************FILE TRANSFER LIMITS****************/
 $UPLOAD_MAX_FILESIZE = 2;ini_set('upload_max_filesize',$UPLOAD_MAX_FILESIZE);//MB
 $POST_MAX_SIZE = 2;ini_set('post_max_size',$POST_MAX_SIZE);//MB
 $MAX_FILE_UPLOADS=5;ini_set('max_file_uploads',$MAX_FILE_UPLOADS);//in multi-upload or just multiple file form elements
 
-//db entry for each page? file, title, nav, permission
-//no db is expensive
+/********************LOGGING**********************/
+$REQUEST_LOG_FILE='request_log.log';
+$ERROR_LOG_FILE='error_log.log';
+$BUG_REPORT_FILE='bug_log.log';
+
+/******************PAGES AND NAV*****************/
+//This specifies not only the navbar, but also the allowed pages accessible. 404 if not in below, even if real file.
+//db entry for each page? [file, title, nav, permission, visibility] db is comp intensive but nicer and live-editable
 $pagesTitles=array(
 	"index"=>"Home",
 	"input"=>"Question Entry",
@@ -43,32 +60,14 @@ $pagesTitles=array(
 	"about"=>"About",
 	"login"=>"Login",
 );
+$hiddenPagesTitles=array(
+	"bugs"=>"Bug Report/Feature Request",
+);
 $adminPagesTitles=array(
 	"admin"=>"Admin",
 );
 
-//--todo--max requests per minute
+/******************CUSTOM LOCAL*******************/
+@include "local_config.php";//If necessary, stuff will be overridden here as local dev settings.
 
-
-if(file_exists("conf/local_config.php"))include "local_config.php";//If necessary, stuff will be overridden here.
-
-
-if(!$DEBUG_MODE){//If it's actually the production version, don't say anything about what happened.
-	ini_set('display_errors',0);
-	ini_set('error_reporting',0);
-	error_reporting(0);
-	function silent($errno, $errstr, $errfile, $errline) {
-		die("An error occurred.");
-	}
-	set_error_handler('silent',E_ALL);
-}
-else{
-	ini_set('display_errors',1);
-	ini_set('error_reporting',E_ALL);
-	error_reporting(E_ALL);
-	function tell($errno, $errstr, $errfile, $errline) {
-		die("An error occurred: Error #(".$errno."): '".$errstr."' in file ".$errfile." on line ".$errline);
-	}
-	set_error_handler('tell',E_ALL);
-}
 ?>

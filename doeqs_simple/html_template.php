@@ -22,14 +22,15 @@
             <p class="chromeframe">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">activate Google Chrome Frame</a> to improve your experience.</p>
         <![endif]-->
 
-		<a name="top"></a>
-		<form id="bugrept" action="bugs.php" method="POST">
+		<form id="bugrept" action='bugs.php' method='POST'>
 			<b>Bug Report/Feature Request:</b>
+			<img src='img/loadingCircle.gif' id='loadimg' style='display:none;width:100%;' alt='Loading...' />
+			<div id="thanksmessage">Submitted! Thanks for the report; we'll be on it immediately.</div>
 			<div id="hidden">
-			<div class="text"><b>Tell us everything about the bug</b>: what happened and what should have, where, on what browser/system, how we might reproduce it, etc.</div>
+			<div class="text"><b>Tell us everything about the bug:</b> what happened and what should have, where, on what browser/system, how we might reproduce it, etc.</div>
 			<div class="text"><b>Or suggest an idea!</b> Tell us anything you can think of!</div>
-			<textarea name="bug"></textarea>
-			<input type="submit" value="Send"/>
+			<textarea name="bug" id="bugrepttext"></textarea>
+			<input id="bugsubbtn" type="submit" value="Send"/>
 			</div>
 			<a href="#" id="clicker"></a>
 		</form>
@@ -39,8 +40,7 @@
 			<br>
 			<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 			<script>window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')</script>
-			<script>
-			$(function(){
+			<script>$(function(){
 				$("#bugrept #hidden").hide();
 				$("#bugrept #clicker").text("[expand]").click(function(){
 					if(this.innerHTML=="[expand]"){
@@ -51,13 +51,41 @@
 						this.innerHTML="[expand]";
 						$(this).siblings("#hidden").hide();
 					}
+					if(!e)var e=window.event;
+					e.preventDefault();
+					return false;
 				});
-			})</script>
+				window.bugthanksorigheight=$('#bugrept #thanksmessage').css('height');
+				$("#bugrept #bugsubbtn").click(function(e){
+					if($('#bugrepttext').text()!=''){
+						$.post('bugs.php',{bug:$('#bugrepttext').text()}).done(function(){
+							$('#bugrept #clicker').text('[expand]').show();
+							$('#bugrept #thanksmessage').show();
+							$('#bugrepttext').text('');
+							
+							$('#bugrept #loadimg').hide();
+							setTimeout(function(){
+								$('#bugrept #thanksmessage').animate({height:'1px',display:'none'});
+								setTimeout(function(){
+									$('#bugrept #thanksmessage').hide().css({height:window.bugthanksorigheight});
+								},400);
+							},5000);
+						});
+						$('#bugrept #hidden, #bugrept #clicker').hide();
+						$('#bugrept #loadimg').show();
+					}
+					
+					if(!e)var e=window.event;
+					e.preventDefault();
+					return false;
+				});
+			});</script>
 			<div id="content">
 			%content%
 			</div>
 		</div>
 		<div id="footer">Copyright &copy;2013-present Lexington Science Bowl Team. All rights reserved.</div>
+		<div style='font-size:0.7em;text-align:center;'>Page took %loadtime% ms to load.</div>
 		<br>
     </body>
 </html>

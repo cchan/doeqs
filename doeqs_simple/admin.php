@@ -2,14 +2,12 @@
 require_once 'functions.php';
 
 //separate face of this page: "Are you sure?"
-//echo $_SESSION["admin-ver"]=genVerCode();
+//echo $_SESSION["admin-ver"]=genRandStr();
 //if($_POST["admin-ver"]===$_SESSION["admin-ver"])
 
 //for particularly dangerous ones "Reenter password to do this action"
 echo '<b style="color:green">';
 if(csrfVerify()){
-	$_SESSION["admin"]=true;
-	if(!isSet($database))$database=new DB;
 	if(isSet($_POST["logout"])){
 		session_total_reset();
 		die("logged out");
@@ -50,9 +48,8 @@ if(csrfVerify()){
 }
 echo '</b>';
 	
-	
-	$filesTotalSize="idk ";
-	//calculated thru system commands or something? Since if just tabulates directory doesn't count tmp files and such
+$filesTotalSize=dirsize(__DIR__);
+
 ?>
 <form action="admin.php" method="POST">
 	<input type="hidden" name='ver' value="<?=csrfCode();?>"/>
@@ -61,7 +58,6 @@ echo '</b>';
 		<fieldset>
 			<legend>Users</legend>
 			<?php 
-				if(!isSet($database))$database=new DB;
 				$q=$database->query_assoc('SELECT COUNT(*) AS n FROM users');
 				echo "<div>Number of users in database: <b>{$q['n']}</b></div>";
 			?>
@@ -80,7 +76,7 @@ echo '</b>';
 	</fieldset>
 	<fieldset>
 		<legend>Server Files</legend>
-		<div>Total size: <?php echo $filesTotalSize;?>MB</div>
+		<div>Total size: <?php echo $filesTotalSize;?> bytes</div>
 		<input type="submit" name="setStandard" value="Set current state as integrity check standard" disabled/>
 		<input type="submit" name="fileInt" value="Files Integrity Check" disabled/><br>
 	</fieldset>

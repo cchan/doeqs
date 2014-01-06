@@ -78,3 +78,44 @@ font-size:0.75em;
 #bugrept #clicker{
 font-size:0.7em;
 }
+#bugrept #thanksmessage{
+height:50px;
+font-size:0.9em;
+color:#00f;
+font-weight:bold;
+display:none;
+text-align:center;
+overflow-y:hidden;
+}
+
+#loginformtable{
+width:100%;
+table-layout:fixed;
+}
+#loginformtable>tr>td,#loginformtable>tbody>tr>td{
+border:solid 1px #000000;
+width:50%;
+vertical-align:top;
+padding:10px;
+}
+
+.alert_neg,.alert_pos,.alert_neut{
+font-weight:bold;
+width:100%;
+text-align:center;
+border-radius:5px;
+padding:5px;
+margin:3px;
+}
+.alert_neg{
+color:#fff;
+background-color:#c00;
+}
+.alert_pos{
+color:#fff;
+background-color:#0c0;
+}
+.alert_neut{
+color:#fff;
+background-color:#000;
+}
