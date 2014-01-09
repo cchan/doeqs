@@ -1,4 +1,5 @@
 <?php
+if(!defined('ROOT_PATH')){header('HTTP/1.0 404 Not Found');die();}
 /*
 config.php
 
@@ -6,9 +7,12 @@ Any configuration stuff.
 */
 
 
-$DEBUG_MODE=false;//True if want lots of output. False on real production.
+$DEBUG_MODE=false;//True if want lots of debug output. False on real production to hide everything.
+
+$SERVER_DOWN=false;//Teapot on every page if it's true. See top of functions.php. :)
 
 /**********************METADATA*********************/
+$DOEQS_ROOT='http://pointlessbutton.xp3.biz/doeqs/';
 $VERSION_NUMBER='0.2.1';
 $WEBMASTER_EMAIL='moose54321@gmail.com';
 date_default_timezone_set("America/Toronto");//(No Boston)

@@ -1,4 +1,6 @@
 <?php
+if(!defined('ROOT_PATH')){header('HTTP/1.0 404 Not Found');die();}
+
 //class.pdf2text.php
 //Found at http://pastebin.com/hRviHKp1
 //It's horrible, just accept it as a magical black box and see the syntax description in the readme provided below.
@@ -34,7 +36,7 @@ PURPOSE(S):
 Most likely for people that want their PDF to be searchable.
 
 SYNTAX:
-include('class.pdf2text.php');
+require('class.pdf2text.php');
 $a = new PDF2Text();
 $a->setFilename('test.pdf');
 $a->decodePDF();

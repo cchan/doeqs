@@ -1,4 +1,7 @@
-<?php require_once 'functions.php';?>
+<?php
+define('ROOT_PATH','');
+require_once ROOT_PATH.'functions.php';
+?>
 <p><a href="http://science.energy.gov/wdts/nsb/">Department of Energy National Science Bowl</a> (referred to as "DOE" or "NSB")
 is a national competition testing knowledge and speed in all areas of science and math. Teams face off in fast-paced buzzer rounds
 ranging from local to national competitions.</p>

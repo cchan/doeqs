@@ -1,9 +1,10 @@
 <?php
-//qIO.php
-	//class qIO
+if(!defined('ROOT_PATH')){header('HTTP/1.0 404 Not Found');die();}
 
-//DOCUMENTATION OF DATABASE
-/*
+/*qIO.php
+Contains powerful question-interface class qIO.
+
+DOCUMENTATION OF DATABASE
 --todo--
 */
 

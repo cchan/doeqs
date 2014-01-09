@@ -1,6 +1,7 @@
 <?php
-require_once "functions.php";
-if(!sessioned("admin")){require_once "admin.php";die();}
+define('ROOT_PATH','');
+require_once ROOT_PATH.'functions.php';
+restrictAccess('a');//xuca
 
 $f=new fileToStr;
 $qp=new qParser;

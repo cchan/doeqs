@@ -1,13 +1,60 @@
 <?php
 /*
 functions.php
+Any useful functions, and lots of includes. Main codebase.
 
-Any useful functions, and lots of includes.
+//--todo-- make consistent 404s
 
-Useful Tips List:
+INCLUSION NOTE:
+At the top of each USER-ACCESSIBLE file
+	define('ROOT_PATH','');
+	require_once ROOT_PATH.'functions.php';
+	restrictAccess('x');//xuca
+[restrictAccess is optional if any-accessible]
+At the top of each NON USER-ACCESSIBLE INCLUDEABLE file
+*/	if(!defined('ROOT_PATH')){header('HTTP/1.0 404 Not Found');die();}/*
+At the top of each PRIVATE file
+	header('HTTP/1.0 404 Not Found');die();
+
+USEFUL TIPS LIST:
 '\n' is just slash n; "\n" is newline.
-
 */
+
+/****************LOGGING*******************/
+function logfile($file,$str=NULL){
+	$file=preg_replace("/[^A-Z0-9]/i",'',stripslashes(strval($file)));
+	
+	if($str!==NULL)$str=str_replace(["\n\n","\r\n\r\n"],"\r\n",strval($str)).' -- ';
+	
+	$log=$str.$_SERVER['REMOTE_ADDR'].' '.date('l, F j, Y h:i:s A').' '.$_SERVER['REQUEST_URI']."\r\n\r\n";
+	file_put_contents(__DIR__.'/logs/'.$file.'.log',"OINKTESTING".$log,FILE_APPEND);
+}
+logfile('req','Request');
+
+
+/**************DOWNTIME****************/
+if(isSet($SERVER_DOWN)&&$SERVER_DOWN===true){
+	header("HTTP/1.0 418 I'm a teapot");
+	echo "<h1>Error <a href='http://tools.ietf.org/html/rfc2324#section-2.3.2'>418 I'm a teapot</a></h1>";
+	echo "<p>In other words, the server went crazy and we're fixing it. Check back in a moment to see if it's back.</p>";
+	echo "<p>Thanks for your patience, and we hope to be back soon!</p>";
+	echo "<p>-DOEQs Dev Team</p>";
+	die();
+}
+function get404(){
+	header("HTTP/1.0 404 Not Found");
+	$ru=basename($_SERVER['REQUEST_URI']);
+	$str=<<<HEREDOC
+<p>Oops, the page <a href="{$_SERVER['REQUEST_URI']}">$ru</a> wasn't found.</p>
+<p>If you typed the address, check that it's entered correctly.</p>
+<p>Otherwise, you can try waiting a bit then reloading the page.</p>
+<p>-DOEQs Dev Team</p>
+HEREDOC;
+	logfile('err','404 Not Found');
+	return $str;
+}
+if(!defined('ROOT_PATH')){echo get404();die();}
+
 
 /****************INCLUDES******************/
 require_once 'conf/config.php';//Config.
@@ -18,10 +65,6 @@ function __autoload($class_name) {//Lovely magic function, autorequires the file
 	//for DB, qIO, filetoStr, qParser, etc.
     require 'classes/class.'.str_replace(array('/',"\\"),'',$class_name).'.php';
 }
-
-
-/****************LOGGING*******************/
-file_put_contents(__DIR__.'/'.$REQUEST_LOG_FILE,$_SERVER['REMOTE_ADDR'].' '.date('l, F j, Y h:i:s A').' '.$_SERVER['REQUEST_URI']."\r\n",FILE_APPEND);
 
 /******************FILES*******************/
 /*
@@ -180,7 +223,8 @@ function templateify(){
 	
 	global $pagesTitles,$hiddenPagesTitles,$adminPagesTitles;
 	
-	$pagename=basename($_SERVER['SCRIPT_FILENAME'],'.php');
+	$pagename=basename($_SERVER['REQUEST_URI'],'.php');
+	if($pagename=='')$pagename='index';
 	if(array_key_exists($pagename,$pagesTitles)){
 		$title=$pagesTitles[$pagename];
 		$content=ob_get_clean();
@@ -194,8 +238,8 @@ function templateify(){
 		$content=ob_get_clean();
 	}
 	else{
-		$title='404 Not Found';
-		$content="Oops, your page <i><a href='{$_SERVER['REQUEST_URI']}'>{$_SERVER['REQUEST_URI']}</a></i> wasn't found! D:<br>Try again?";
+		$title='Error 404 Not Found';
+		$content=get404();
 		ob_clean();
 	}
 	$content=fetch_alerts_html().$content;
@@ -206,14 +250,14 @@ function templateify(){
 	if(userAccess('a')){
 		$nav.='&nbsp;&mdash;&nbsp;';
 		foreach($adminPagesTitles as $p=>$t)
-			$nav.="<a href='$p.php'>$t</a>";
+			$nav.="<a href='/$p.php'>$t</a>";
 	}
 	$nav.='&nbsp;&middot;&nbsp;]';
 	if(userAccess('u'))$nav.='&nbsp;&nbsp;&nbsp;<form action="login.php" method="POST" style="display:inline-block;"><input type="hidden" name="ver" value="<?=csrfCode();?>"/><input type="submit" name="logout" value="Log Out" /></form>';
 
 	
 	//tried OB to get file contents which died for some reason...
-	$template=file_get_contents(__DIR__.'/html_template.php');
+	$template=file_get_contents(__DIR__.'/html_template.php');//--todo-- don't access files outside of protected object
 	
 	global $VERSION_NUMBER,$TIME_START;
 	echo str_replace(['%title%','%content%','%nav%','%version%','%loadtime%'],[$title,$content,$nav,$VERSION_NUMBER,substr(1000*(microtime(true)-$TIME_START),0,6)],$template);
@@ -230,15 +274,13 @@ function err($description){
 }
 //Error-handler function.
 function error_catcher($errno,$errstr,$errfile,$errline){
-	global $DEBUG_MODE, $ERROR_LOG_FILE;
+	global $DEBUG_MODE;
 	ob_start();
 	debug_print_backtrace();
-	$backtrace=str_replace('\n','\r\n',ob_get_clean());
-	$date=date('l, F j, Y h:i:s A');
-	$err="Error at $date. Error #$errno: '$errstr' at line $errline of file $errfile.\r\nDebug Backtrace:\r\n$backtrace\r\n\r\n";
+	$backtrace=str_replace("\n","\r\n",ob_get_clean());
+	$err="Error #$errno: '$errstr' at line $errline of file $errfile. Debug Backtrace:\r\n$backtrace\r\n";
 	
-	//File log, in the functions.php directory
-	file_put_contents(__DIR__.'/'.$ERROR_LOG_FILE,$err,FILE_APPEND);
+	logfile('err',$err);
 	
 	//Printing out
 	if($DEBUG_MODE){
@@ -264,15 +306,18 @@ error_reporting(E_ALL);
 //Call this to add an alert to be displayed at the top.
 //Text: the alert text
 //Disposition: negative means bad (red), positive means good (green), zero means neutral (black)
-function alert($text,$disposition=0){
-	$page_name=$_SERVER['REQUEST_URI'];//as long as it's unique to the page doesn't matter
+function alert($text,$disposition=0,$page_name=NULL){
+	//Check that it's a valid page.
+	
+	if(is_null($page_name))
+		$page_name=basename($_SERVER['REQUEST_URI']);
 	$sp='alerts_'.$page_name;
 	
 	if(!sessioned($sp))$_SESSION[$sp]=array();
 	$_SESSION[$sp][]=[$text,$disposition];
 }
 function fetch_alerts_html(){
-	$page_name=$_SERVER['REQUEST_URI'];//as long as it's unique to the page doesn't matter
+	$page_name=basename($_SERVER['REQUEST_URI']);
 	$sp='alerts_'.$page_name;
 	
 	$html='';
@@ -282,7 +327,7 @@ function fetch_alerts_html(){
 			if($alert[1]>0)$disposition='pos';
 			else if($alert[1]<0)$disposition='neg';
 			else $disposition='neut';
-			$html.="<div class='alert_{$disposition}'>".htmlentities($alert[0]).'</div>';
+			$html.="<div class='alert_{$disposition}'>".$alert[0].'</div>';
 		}
 		unset($_SESSION[$sp]);
 	}

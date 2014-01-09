@@ -1,4 +1,5 @@
 <?php
+if(!defined('ROOT_PATH')){header('HTTP/1.0 404 Not Found');die();}
 /*
  * This is a PHP library that handles calling reCAPTCHA.
  *    - Documentation and latest version

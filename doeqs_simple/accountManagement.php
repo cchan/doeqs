@@ -1,4 +1,5 @@
 <?php
+if(!defined('ROOT_PATH')){header('HTTP/1.0 404 Not Found');die();}
 /*
 accountManagement.php
 Implements decent account-management scheme.
@@ -165,6 +166,10 @@ function userAccess($minPrivilegeLevel){
 	
 	else return $nUser>=$nAllowed;
 }
+function restrictAccess($minPrivilegeLevel){
+	if(!userAccess($minPrivilegeLevel))
+		forceLogin();
+}
 
 if(sessioned('user_v')&&(!array_key_exists('v',$_COOKIE)||$_COOKIE['v']!=$_SESSION['user_v']))authError();
 function loginEmailPass($email,$pass){
@@ -185,6 +190,14 @@ function loginEmailPass($email,$pass){
 	setcookie('v',$_SESSION['user_v']);//passed back and forth and verified above.
 	
 	return true;
+}
+function forceLogin(){
+	global $DOEQS_ROOT;
+	session_total_reset();
+	alert('Oops, you need to log in to access <i>'.basename($_SERVER['REQUEST_URI']).'</i>.',-1,'login.php');
+	$_SESSION['login_redirect_back']=$_SERVER['REQUEST_URI'];
+	header('Location: '.$DOEQS_ROOT.'login.php');
+	die();
 }
 function logout(){//--todo--uhhhhhh that's it? shouldn't it be whitelist-style erasure? idk, since $_SESSION['attempts_*'] needs to stay alive
 	unset($_SESSION['email'],$_SESSION['permissions'],$_SESSION['user_v']);

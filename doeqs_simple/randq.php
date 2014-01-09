@@ -1,13 +1,28 @@
 <?php
-require_once 'functions.php';
-require_once 'classes/class.qIO.php';
+
+
+/*------------todo next-----------/
+Integrate everything into this interface? With click-to-edit, etc. Hm. It should at least look *similar*.
+*/
+
+
+define('ROOT_PATH','');
+require_once ROOT_PATH.'functions.php';
+require_once ROOT_PATH.'classes/class.qIO.php';
+restrictAccess('u');//xuca
+/*
+randq.php
+Fetches random questions.
+*/
+
+
 $q=new qIO;
 
 //docexport functionality
 if(csrfVerify()&&posted('getDoc','qidcsv','docexport')){
 	function sendfile($contenttype,$ext,$content){
 		header("Content-type: $contenttype");
-		header('Content-disposition: attachment; filename="'.substr(hash('SHA1',mt_rand()),0,16).'.'.$ext.'"');
+		header('Content-disposition: attachment; filename="Export'.substr(hash('SHA1',mt_rand()),0,16).'.'.$ext.'"');
 		echo $content;
 		
 		global $CANCEL_TEMPLATEIFY;

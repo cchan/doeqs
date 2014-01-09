@@ -1,6 +1,12 @@
 <?php
-require_once 'functions.php';
-require_once('classes/recaptchalib.php');
+define('ROOT_PATH','');
+require_once ROOT_PATH.'functions.php';
+require_once ROOT_PATH.'classes/recaptchalib.php';
+/*
+login.php
+Login, logout, whatever.
+*/
+
 
 if(posted('logout')){
 	logout();
@@ -12,8 +18,16 @@ elseif(csrfVerify()){
 	elseif(posted('login')){//Is the submit button submitted for all browsers? hm
 		//Naturally all this stuff is useless without proper SSL security. Shhhhhhhhhhh.
 		if(loginEmailPass($_POST['email'],$_POST['pass'])){
-			alert('Successfully logged in!',1);
 			reset_attempts('login');
+			if(isSet($_SESSION['login_redirect_back'])){
+				$lr=$_SESSION['login_redirect_back'];
+				header('Refresh: 3; '.$lr);
+				alert('Logged in! In a few seconds, you should be redirected back to
+				<a href="'.htmlentities($lr).'">'.htmlentities($lr).'</a>.',1);
+				unset($_SESSION['login_redirect_back'],$lr);
+			}
+			else
+				alert('Successfully logged in!',1);
 		}
 		else{
 			logout();
@@ -38,6 +52,7 @@ elseif(csrfVerify()){
 
 if(userAccess('u'))echo "Currently logged in as <b>{$_SESSION['email']}</b>.";
 else{?>
+
 <table id="loginformtable"><tr>
 	<td>
 	<?=generateForm(['action'=>'login.php','method'=>'POST','autocomplete'=>'off'],[

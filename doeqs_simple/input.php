@@ -1,5 +1,11 @@
 <?php
-require_once 'functions.php';
+define('ROOT_PATH','');
+require_once ROOT_PATH.'functions.php';
+restrictAccess('u');//xuca
+/*
+input.php
+Input of questions into the database.
+*/
 
 
 $unparsed='';

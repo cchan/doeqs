@@ -1,5 +1,7 @@
 <?php
-require_once 'functions.php';
+define('ROOT_PATH','');
+require_once ROOT_PATH.'functions.php';
+restrictAccess('a');//xuca
 
 //separate face of this page: "Are you sure?"
 //echo $_SESSION["admin-ver"]=genRandStr();

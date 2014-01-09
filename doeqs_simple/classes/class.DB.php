@@ -1,4 +1,6 @@
 <?php
+if(!defined('ROOT_PATH')){header('HTTP/1.0 404 Not Found');die();}
+
 /*
 class.DB.php
 
@@ -19,6 +21,7 @@ Potential improvements:
 	DELETE... (LIMIT 1)-> UPDATE... SET Deleted=1 (LIMIT 1)
 	UNDELETE... (LIMIT 1)-> UPDATE... SET Deleted=0 (LIMIT 1)
 	Honeypotting to a dud db when there's an obvious attack
+	Using Show grants to make sure this user can do the very few specific things, and only those.
 
 USAGE:
 Initialization
@@ -77,7 +80,7 @@ class DB{
 		global $DB_DOMAIN,$DB_UNAME,$DB_PASSW,$DB_DB;
 		if($db===NULL)$db=$DB_DB;
 		$this->con=new MySQLi($DB_DOMAIN,$DB_UNAME,$DB_PASSW,$db);
-		if(!$this->con||$this->con->connect_error)$this->err("con to DB $DB_DB failed",E_USER_ERROR);
+		if(!$this->con||$this->con->connect_error)$this->err(24);//failed connecting
 	}
 	
 	
@@ -98,17 +101,19 @@ class DB{
 		
 	*/
 	public function query($template,$replaceArr=array()){
-		if(!is_string($template))$this->err('replacement string not a string');
-		if(!is_array($replaceArr))$this->err('replacement array not an array');
+		if(!is_string($template))$this->err(62);//not a string
+		if(!is_array($replaceArr))$this->err(89);//not an array
 		
 		foreach($replaceArr as $ind=>$replace)//Replace all the %0%,%1%,... things
-			$template=str_replace("%$ind%",$this->sanitize($replace),$template);
-		if(strpos($template,'%'))$this->err('not all replacements specified');
+			if(!is_int($ind))$this->err(27);//not a number index
+			else $template=str_replace('%'.intval($ind).'%',$this->sanitize($replace),$template);
 		
-		if($this->isDestructiveQuery($template))$this->err("destructive query: $template");
+		if(strpos($template,'%'))$this->err(33);//not all replaced
+		
+		if($this->isDestructiveQuery($template))$this->err(65);//destructive query
 		
 		if(($qresult=$this->con->query($template))===false)//On the Acer, the query takes avg 0.01 sec.
-			$this->err("query failed: $template");
+			$this->err(17);//failed query
 		$this->insert_id=$this->con->insert_id;
 		
 		return $qresult;
@@ -125,7 +130,6 @@ class DB{
 		if($qresult===true)return true;//Not a data-gathering query, like INSERT or DELETE or UPDATE
 		return $qresult->fetch_assoc();//A data-gathering query, like SELECT
 	}
-	
 	
 	/*
 	sanitize(mixed $in)
@@ -145,6 +149,7 @@ class DB{
 		
 		//STRING: Below means it's a string of some sort, so it'll be thoroughly sanitized:
 			//str_replace'd, HTMLENTITIES'd, mysqli_real_escape_string'd, and put in double quotes.
+		if(!is_string($in))$this->err(47);//invalid parameter type
 		
 		//htmlentities troubleshooting :( It doesn't like weird characters.
 		$search = array(chr(145), //'smart' single quotes
@@ -163,7 +168,7 @@ class DB{
 			htmlentities($processed,ENT_QUOTES|ENT_HTML401,'ISO-8859-1')//Trying to make HTMLENTITIES work.
 		);
 		
-		if($escaped==''){$this->err('HTMLENTITIES failed for string: '.var_export($in,true));};
+		if($escaped=='')$this->err(13);//HTMLENTITIES failed.
 		
 		return '"'.$escaped.'"';
 	}
@@ -198,7 +203,10 @@ class DB{
 		Private; you don't need to use it.
 	*/
 	private function err($str){
-		trigger_error('DB: '.htmlentities($str),E_USER_ERROR);
+		//"security by obscurity" $str is actually some int.
+		//And notice how random error messages are generated.
+		if(!is_int($ind))$str=52;//Error triggered weirdly.
+		trigger_error(mt_rand(100,999).intval(htmlentities($str)).mt_rand(100,999),E_USER_ERROR);
 	}
 };
 ?>
