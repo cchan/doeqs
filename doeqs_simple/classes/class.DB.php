@@ -117,8 +117,7 @@ final class DB{
 		//Replace all the %0%,%1%,... things
 		foreach($replaceArr as $ind=>$replace)
 			if(!is_int($ind))$this->err(27);//not a number index
-			elseif(!is_string(strval($replace)))$this->err(90);//not a string replacement
-			else $template=str_replace('%'.intval($ind).'%',$this->sanitize(strval($replace)),$template);
+			else $template=str_replace('%'.intval($ind).'%',$this->sanitize($replace),$template);
 		if(stripos($template,'%'))$this->err(33);//not all replaced
 		
 		if($this->isDestructiveQuery($template))$this->err(65);//destructive query noooo
