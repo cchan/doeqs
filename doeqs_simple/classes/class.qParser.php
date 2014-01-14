@@ -9,9 +9,9 @@ class qParser{
 		global $database,$ruleSet;
 		if(str_replace([" ","	","\n","\r"],'',$qstr)===''){echo "Error: No text submitted.";return '';}
 		
-		$t=microtime();
+		//$t=microtime();
 		$nMatches=preg_match_all($this->qregex(), $qstr, $qtext);
-		echo '(TIME-millis:'.(microtime()-$t).':TIME)';
+		//echo '(TIME-millis:'.(microtime()-$t).':TIME)';
 		
 		$qs=new qIO();
 		for($i=0;$i<$nMatches;$i++){

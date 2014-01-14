@@ -22,10 +22,12 @@ if(csrfVerify()&&(posted("copypaste")||isSet($_FILES["fileupload"])||posted("dir
 		else echo $err;
 	}
 	else{
-		require_class("qParser");
+		require_class("qIO","qParser");
 		$qp=new qParser();
 		$error=false;
-		if(posted("copypaste"))$unparsed=$qp->parse($_POST["copypaste"]);
+		if(posted("copypaste")){
+			$unparsed=$qp->parse($_POST["copypaste"]);
+		}
 		elseif(isSet($_FILES["fileupload"])){
 			require_class("fileToStr");
 			$fs=new fileToStr();
