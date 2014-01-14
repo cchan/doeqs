@@ -29,12 +29,13 @@ userAccess
 
 
 
-
-
+//session_name('doeqs');
 session_start();
+setcookie(session_name(),session_id(),time()+$SESSION_TIMEOUT_MINUTES*60);
 function session_total_reset(){//Destroys a session according to the php.net method, plus some modifications.
 	// Unset all of the session variables.
 	$_SESSION = array();
+	unset($_SESSION);
 
 	// If it's desired to kill the session, also delete the session cookie.
 	// Note: This will destroy the session, and not just the session data!

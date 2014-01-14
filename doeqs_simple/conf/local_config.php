@@ -10,8 +10,8 @@ Any personal config! Refer to config.php for all config options.
 	$DOEQS_ROOT='http://localhost:3141/';
 	
 	$DB_DOMAIN="localhost";
-	$DB_UNAME="root";
-	$DB_PASSW="";
+	$DB_UNAME="php";
+	$DB_PASSW="moosecow";
 	$DB_DB="doeqs_simple";
 	
 	$DEBUG_MODE=true;

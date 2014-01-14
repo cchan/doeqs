@@ -61,9 +61,10 @@ require_once 'conf/config.php';//Config.
 require_once 'classes/class.DB.php';//Safe, consistent (MySQL) databasing.
 $database=new DB;//Surprisingly, it's faster if we load it every page.
 require_once 'accountManagement.php';//Account and session management.
-function __autoload($class_name) {//Lovely magic function, autorequires the file when you attempt to construct the class
-	//for DB, qIO, filetoStr, qParser, etc.
-    require 'classes/class.'.str_replace(array('/',"\\"),'',$class_name).'.php';
+//also: DB, qIO, fileToStr, qParser, etc.
+function require_class(){
+	foreach(func_get_args() as $class_name)
+		require_once 'classes/class.'.stripslashes($class_name).'.php';
 }
 
 /******************FILES*******************/
@@ -295,7 +296,6 @@ function error_catcher($errno,$errstr,$errfile,$errline){
 	//If you want to have errors within classes, implement a class error-catching system yourself and output it to the user that way. Preferably through alerts.
 }
 set_error_handler('error_catcher', E_ALL);
-ini_set('display_errors',1);
 ini_set('error_reporting',E_ALL);
 error_reporting(E_ALL);
 //Strict: No notices allowed, either.

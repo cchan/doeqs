@@ -22,10 +22,12 @@ if(csrfVerify()&&(posted("copypaste")||isSet($_FILES["fileupload"])||posted("dir
 		else echo $err;
 	}
 	else{
+		require_class("qParser");
 		$qp=new qParser();
 		$error=false;
 		if(posted("copypaste"))$unparsed=$qp->parse($_POST["copypaste"]);
 		elseif(isSet($_FILES["fileupload"])){
+			require_class("fileToStr");
 			$fs=new fileToStr();
 			if(is_array($_FILES["fileupload"]["tmp_name"])){//for multiple-supporting browsers
 				foreach($_FILES["fileupload"]["tmp_name"] as $ind=>$tmp_name){

@@ -50,7 +50,7 @@ Closing
 */
 
 
-class DB{
+final class DB{
 	/*
 	mysqli $con
 		The original purpose of $DB, to encapsulate privately the $con variable.
@@ -81,6 +81,9 @@ class DB{
 		if($db===NULL)$db=$DB_DB;
 		$this->con=new MySQLi($DB_DOMAIN,$DB_UNAME,$DB_PASSW,$db);
 		if(!$this->con||$this->con->connect_error)$this->err(24);//failed connecting
+		
+		//var_dump($this->con->query('SHOW GRANTS')->fetch_all());
+		
 	}
 	
 	
@@ -104,13 +107,23 @@ class DB{
 		if(!is_string($template))$this->err(62);//not a string
 		if(!is_array($replaceArr))$this->err(89);//not an array
 		
-		foreach($replaceArr as $ind=>$replace)//Replace all the %0%,%1%,... things
+		//Check that it's not *allowed* to do anything other than those three [this in constructor]
+		//self-modding self-verification [also in constructor]?
+		
+		//Check that it has no wildcard characters
+		//$quoteless=preg_replace("",$template);
+		//if(strpos($quoteless,'*')$this->err(85);//wildcard being used
+		
+		//Replace all the %0%,%1%,... things
+		foreach($replaceArr as $ind=>$replace)
 			if(!is_int($ind))$this->err(27);//not a number index
+			elseif(!is_string($replace))$this->err(90);//not a string replacement
 			else $template=str_replace('%'.intval($ind).'%',$this->sanitize($replace),$template);
+		if(stripos($template,'%'))$this->err(33);//not all replaced
 		
-		if(strpos($template,'%'))$this->err(33);//not all replaced
+		if($this->isDestructiveQuery($template))$this->err(65);//destructive query noooo
 		
-		if($this->isDestructiveQuery($template))$this->err(65);//destructive query
+		//if(stripos($template,'WHERE')!==false)//adding in a "AND Deleted=0" since that's the point of the Deleted thing
 		
 		if(($qresult=$this->con->query($template))===false)//On the Acer, the query takes avg 0.01 sec.
 			$this->err(17);//failed query
@@ -182,18 +195,26 @@ class DB{
 		Note: $DELETED_FLAG_IMPLEMENTED indicates whether the Deleted flag on db entries is implemented in this particular web application.
 			If false, will allow DELETEs with LIMITs.
 			If true, will not allow any sort of DELETE.
+		Note on Note: $DELETED_FLAG_IMPLEMENTED is deprecated, but you can bring it back if you want.
+			You must use UPDATE asdf SET Deleted=1 WHERE qwer=123 LIMIT 1
+			instead of DELETE FROM asdf SET Deleted=1 WHERE qwer=123 LIMIT 1
 	*/
 	private function isDestructiveQuery($q){
-		$DELETED_FLAG_IMPLEMENTED=true;
+		//$DELETED_FLAG_IMPLEMENTED=true;
 		
-		return(
-			stripos($q,'DROP ')!==false||
-			stripos($q,'TRUNCATE ')!==false||
-				(
-				stripos($q,'DELETE ')!==false&&
-				($DELETED_FLAG_IMPLEMENTED||stripos($q,'LIMIT')===false)
-				)
-			);
+		//Check that its main command is indeed SELECT, INSERT, or UPDATE.
+		if(strpos($q,' ')===false)$this->err(45);//no spaces can't be right
+		$maincmd=strtolower(substr($q,0,strpos($q,' ')));
+		if(!in_array($maincmd,['select','insert','update'],true))$this->err(46);//select insert update only.
+		
+		//Check that there's no DROP, TRUNCATE, or DELETE. Maybe should check others too.
+		if(stripos($q,'DROP ')!==false||stripos($q,'TRUNCATE ')!==false||stripos($q,'DELETE ')!==false
+			//&&($DELETED_FLAG_IMPLEMENTED||stripos($q,'LIMIT')===false)
+				)$this->err(65);
+		
+		if(stripos($q,'--')!==false)$this->err(79);//possible SQL injection
+		
+		return false;
 	}
 	
 	
@@ -205,8 +226,9 @@ class DB{
 	private function err($str){
 		//"security by obscurity" $str is actually some int.
 		//And notice how random error messages are generated.
-		if(!is_int($ind))$str=52;//Error triggered weirdly.
-		trigger_error(mt_rand(100,999).intval(htmlentities($str)).mt_rand(100,999),E_USER_ERROR);
+		if(!is_int($str))$this->err(52);//Error triggered weirdly. :)
+		trigger_error('ERROR #'.mt_rand(100,999).intval(htmlentities($str)).mt_rand(100,999),E_USER_ERROR);
+		die();
 	}
 };
 ?>

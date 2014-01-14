@@ -7,7 +7,8 @@ ErrorDocument 404 /404.php
 ErrorDocument 403 /404.php
 
 order allow,deny
-<Files ~ "\.(php|jpe?g?|gif|png|js|css)$">
+#Don't include html usually
+<Files ~ "\.(php|jpe?g?|gif|png|js|css|html)$">
    allow from all
 </Files>
 <Files "">

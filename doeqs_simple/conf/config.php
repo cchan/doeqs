@@ -18,9 +18,16 @@ $WEBMASTER_EMAIL='moose54321@gmail.com';
 date_default_timezone_set("America/Toronto");//(No Boston)
 
 /************************SESSION*********************/
-$SESSION_TIMEOUT_MINUTES=15;
+$SESSION_TIMEOUT_MINUTES=10;
+ini_set('session.gc_maxlifetime',600);
 //$MAX_REQUESTS_PER_MINUTE=30;//Still to be implemented. What's a good number, and what's a good response?
-
+ini_set('display_errors',false);
+ini_set('log_errors',true);
+ini_set('safe_mode',true);
+ini_set('safe_mode_gid',true);
+//register_globals 0
+//disable_functions extract mysql_connect
+//disable_classes mysql
 
 /********************DATABASE ACCESS*******************/
 //pointlessbutton.xp3.biz settings are the default.
