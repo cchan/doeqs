@@ -77,6 +77,6 @@ $adminPagesTitles=array(
 );
 
 /******************CUSTOM LOCAL*******************/
-@include "local_config.php";//If necessary, stuff will be overridden here as local dev settings.
+@include "config.local.php";//If necessary, stuff will be overridden here as local dev settings.
 
 ?>
