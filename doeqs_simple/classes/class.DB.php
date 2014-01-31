@@ -76,10 +76,9 @@ final class DB{
 		
 		Don't call it directly, use the "new" keyword.
 	*/
-	public function __construct($db=NULL){//All this does is to try to connect to the db, and store that con in $this->con
-		global $DB_DOMAIN,$DB_UNAME,$DB_PASSW,$DB_DB;
-		if($db===NULL)$db=$DB_DB;
-		$this->con=new MySQLi($DB_DOMAIN,$DB_UNAME,$DB_PASSW,$db);
+	public function __construct($DB_DOMAIN=NULL,$DB_UNAME=NULL,$DB_PASSW=NULL,$DB_DB=NULL){//All this does is to try to connect to the db, and store that con in $this->con
+		if(is_null($DB_DB))global $DB_DOMAIN,$DB_UNAME,$DB_PASSW,$DB_DB;
+		$this->con=new MySQLi($DB_DOMAIN,$DB_UNAME,$DB_PASSW,$DB_DB);
 		if(!$this->con||$this->con->connect_error)$this->err(24);//failed connecting
 		
 		//var_dump($this->con->query('SHOW GRANTS')->fetch_all());

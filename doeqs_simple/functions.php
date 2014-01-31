@@ -53,7 +53,6 @@ HEREDOC;
 	logfile('err','404 Not Found');
 	return $str;
 }
-if(!defined('ROOT_PATH')){echo get404();die();}
 
 
 /****************INCLUDES******************/
@@ -160,6 +159,7 @@ function anyIndicesEmpty($array/*, var1, var2, ...,varN*/){//it's NOT anyIndices
 	return false;
 }
 function randomizeArr($arr){//Randomly permute an array - yes, it works! in what amounts to O(n)!
+//realization several months later... this is exactly the Fisher-Yates shuffle. But I discovered it myself, hmph!
 	for($i=count($arr)-1;$i>0;$i--){
 		$ind=mt_rand(0,$i);//Get the index of the one to swap with.
 		$tmp=$arr[$ind];$arr[$ind]=$arr[$i];$arr[$i]=$tmp;//Swap with the last one.
@@ -225,7 +225,7 @@ function templateify(){
 	global $pagesTitles,$hiddenPagesTitles,$adminPagesTitles;
 	
 	$pagename=basename($_SERVER['REQUEST_URI'],'.php');
-	if($pagename=='')$pagename='index';
+	if($pagename==''||$pagename=='doeqs_simple')$pagename='index';
 	if(array_key_exists($pagename,$pagesTitles)){
 		$title=$pagesTitles[$pagename];
 		$content=ob_get_clean();
@@ -261,7 +261,7 @@ function templateify(){
 	$template=file_get_contents(__DIR__.'/html_template.php');//--todo-- don't access files outside of protected object
 	
 	global $VERSION_NUMBER,$TIME_START;
-	echo str_replace(['%title%','%content%','%nav%','%version%','%loadtime%'],[$title,$content,$nav,$VERSION_NUMBER,substr(1000*(microtime(true)-$TIME_START),0,6)],$template);
+	echo str_replace(['%title%','%content%','%nav%','%version%','%loadtime%','%root%'],[$title,$content,$nav,$VERSION_NUMBER,substr(1000*(microtime(true)-$TIME_START),0,6),ROOT_PATH],$template);
 	ob_flush();
 	flush();
 }
@@ -352,39 +352,6 @@ function database_stats(){//Returns the database statistics as an HTML string.
 	$ret.="<br>Total: <b>$totalN</b>";
 	$ret.='</div>';
 	return $ret;
-}
-
-
-function generateForm($form,$inputs){
-	//prompt type name value autofocus
-	$csrf=csrfCode();
-	$a='';
-	foreach($form as $name=>$value)
-		$a.=' '.$name.'="'.$value.'" ';
-	
-	$form=<<<HEREDOC
-<form $a>
-<input type="hidden" name='ver' value="$csrf"/>
-<table>
-HEREDOC;
-	
-	foreach($inputs as $input){
-		if($input=='')
-			$form.='<tr><td colspan="2">&nbsp;</td></tr>';
-		elseif(is_string($input))
-			$form.='<tr><td colspan="2">'.$input.'</td></tr>';
-		else{
-			$elem='<input ';
-			foreach($input as $name=>$value)
-				if($name!='prompt')
-					$elem.=" {$name}=\"{$value}\" ";
-			$elem.=' />';
-			if(array_key_exists('prompt',$input))$form.="<tr><td>{$input['prompt']}<td>$elem</td></tr>";
-			else $form.="<tr><td colspan='2'>$elem</td></tr>";
-		}
-	}
-	$form.='</table></form>';
-	return $form;
 }
 
 

@@ -14,6 +14,8 @@ $SESSION_TIMEOUT_MINUTES
 NEEDED AT CALLTIME:
 posted()
 sessioned()
+DB
+err()?
 ...
 
 
@@ -88,14 +90,6 @@ function reset_attempts($process){
 
 
 
-
-
-
-
-
-
-
-
 function genRandStr($length=NULL){
 	if(!$length)$length=mt_rand(64,96);
     $c = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';$cl = strlen($c);
@@ -123,6 +117,36 @@ function csrfCode(/*$forceNew*/ /*$ver_name*/){//Returns randomly generated CSRF
     return ($code=$_SESSION['ver']=genRandStr());
 }
 
+function generateForm($form,$inputs){
+	$csrf=csrfCode();
+	$a='';
+	foreach($form as $name=>$value)
+		$a.=' '.$name.'="'.$value.'" ';
+	
+	$form=<<<HEREDOC
+<form $a>
+<input type="hidden" name='ver' value="$csrf"/>
+<table>
+HEREDOC;
+	
+	foreach($inputs as $input){
+		if($input=='')
+			$form.='<tr><td colspan="2">&nbsp;</td></tr>';
+		elseif(is_string($input))
+			$form.='<tr><td colspan="2">'.$input.'</td></tr>';
+		else{
+			$elem='<input ';
+			foreach($input as $name=>$value)
+				if($name!='prompt')
+					$elem.=" {$name}=\"{$value}\" ";
+			$elem.=' />';
+			if(array_key_exists('prompt',$input))$form.="<tr><td>{$input['prompt']}<td>$elem</td></tr>";
+			else $form.="<tr><td colspan='2'>$elem</td></tr>";
+		}
+	}
+	$form.='</table></form>';
+	return $form;
+}
 
 
 
@@ -131,7 +155,7 @@ function authError(){
 	die('Authentication error.');
 }
 
-function hashEquals($a,$b){//Compares the *hashes* of two variables (really salty ones) to mess with timing attacks.
+function hashEquals($a,$b){//Compares the *hashes* of two variables to mess with timing attacks.
 	$m=microtime();
 	return sha1($a.$m.$b)==sha1($b.$m.$a);
 }
@@ -174,11 +198,9 @@ function restrictAccess($minPrivilegeLevel){
 
 if(sessioned('user_v')&&(!array_key_exists('v',$_COOKIE)||$_COOKIE['v']!=$_SESSION['user_v']))authError();
 function loginEmailPass($email,$pass){
-	
 	if(!filter_var($email, FILTER_VALIDATE_EMAIL))return false;
 	
 	global $database;
-	
 	$q=$database->query_assoc('SELECT email, passhash, permissions, salt FROM users WHERE email=%0%',[$email]);
 	if(!$q)return false;
 	
@@ -193,15 +215,15 @@ function loginEmailPass($email,$pass){
 	return true;
 }
 function forceLogin(){
-	global $DOEQS_ROOT;
 	session_total_reset();
 	alert('Oops, you need to log in to access <i>'.basename($_SERVER['REQUEST_URI']).'</i>.',-1,'login.php');
 	$_SESSION['login_redirect_back']=$_SERVER['REQUEST_URI'];
-	header('Location: '.$DOEQS_ROOT.'login.php');
+	header('Location: '.$DOEQS_URL.'login.php');
 	die();
 }
 function logout(){//--todo--uhhhhhh that's it? shouldn't it be whitelist-style erasure? idk, since $_SESSION['attempts_*'] needs to stay alive
-	unset($_SESSION['email'],$_SESSION['permissions'],$_SESSION['user_v']);
+	foreach($_SESSION as $s)
+		if(strpos($s,'attempt_')===false)unset($s);
 }
 function saltyStretchyHash($pass,$salt){//WAAAY overdoing it. Messing with any sort of brute force attack.
 	if(!$salt){err('Needs salt');return;}
@@ -224,7 +246,8 @@ function newProfileError($email,$pass,$confpass){
 	if($pass!==$confpass)return 'Passwords do not match.';
 	if(strlen($pass)<8)return 'Password too short (must be at least 8 characters).';
 	
-	if($database->query_assoc('SELECT 1 from users WHERE email=%0%',[$email]))return 'That email already exists.';
+	if($database->query_assoc('SELECT 1 from users WHERE email=%0%',[$email]))
+		return 'That email already exists.';
 	
 	$permissions='u';//regular user
 	
@@ -238,7 +261,7 @@ function newProfileError($email,$pass,$confpass){
 
 function chkCaptcha(){
 	require_once('classes/recaptchalib.php');
-	$privatekey = '6LdAgOwSAAAAAMv4kQCar3AvC4rqtPRb5uZS1W8y';
+	global $RECAPTCHA_privatekey;
 	$resp = recaptcha_check_answer ($privatekey,
 		$_SERVER["REMOTE_ADDR"],
 		$_POST["recaptcha_challenge_field"],
@@ -247,7 +270,7 @@ function chkCaptcha(){
 }
 function getCaptcha(){
 	require_once('classes/recaptchalib.php');
-	$publickey = '6LdAgOwSAAAAAHJopBbhf48M7Np1LJ9pB-pIM854'; // you got this from the signup page
+	global $RECAPTCHA_publickey;
 	return recaptcha_get_html($publickey);
 }
 ?>
