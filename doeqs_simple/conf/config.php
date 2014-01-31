@@ -12,8 +12,8 @@ $DEBUG_MODE=false;//True if want lots of debug output. False on real production 
 $SERVER_DOWN=false;//Teapot on every page if it's true. See top of functions.php. :)
 
 /**********************METADATA*********************/
-$DOEQS_ROOT='http://pointlessbutton.xp3.biz/doeqs/';
-$VERSION_NUMBER='0.2.1';
+$DOEQS_URL='http://pointlessbutton.xp3.biz/doeqs/';
+$VERSION_NUMBER='0.2.2';
 $WEBMASTER_EMAIL='moose54321@gmail.com';
 date_default_timezone_set("America/Toronto");//(No Boston)
 
@@ -29,12 +29,10 @@ ini_set('safe_mode_gid',true);
 //disable_functions extract mysql_connect
 //disable_classes mysql
 
-/********************DATABASE ACCESS*******************/
-//pointlessbutton.xp3.biz settings are the default.
-$DB_DOMAIN = "localhost";
-$DB_UNAME = "621516";
-$DB_PASSW = "dooba"."head".(5*(128*5+7)%1000+1000);
-$DB_DB = "621516";
+//$DB_SERVER
+//$DB_USERNAME
+//$DB_PASSWORD
+//$DB_DATABASE
 
 /***********************DOEQS************************/
 $ruleSet=array(//...to be honest, this is annoying.
