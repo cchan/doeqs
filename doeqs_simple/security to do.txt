@@ -1,4 +1,15 @@
 hardening:
+
+(
+"Layers" framework:
+DB (mysql)
++ FILE (filesys access vs file_put_contents)
++ DATA (post/get/file from user)
++ SESS (session stuff - timeouts, verification, etc)
++ HTML (output w/lotsa HTMLENTITIES + detection of revealing output - use Mustache?)
++ requiring HTTPS
+)
+
 make files read-only, .htaccess inaccessible, moving it above webroot, everything "old" must be moved out.
 constantify config, except for usefully customizable ones.
 make stuff 'final' - 'final public function'
@@ -38,3 +49,6 @@ integrity checking code
 login operations must operate in about the same amount of time whether right or wrong or in between
 exception handling
 input length limits - up to 20chars client and server enforced for username/pass
+config.server.php, config.local.php, config.php include order, etc.
+Unicode vulnerabilities - use iconv() in DB
+Compensating for server vulns hm
