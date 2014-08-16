@@ -225,7 +225,7 @@ function templateify(){
 	global $pagesTitles,$hiddenPagesTitles,$adminPagesTitles;
 	
 	$pagename=basename($_SERVER['REQUEST_URI'],'.php');
-	if($pagename==''||$pagename=='doeqs_simple')$pagename='index';
+	if($pagename==''||substr($_SERVER['REQUEST_URI'],-1,strlen($_SERVER['REQUEST_URI']))==='/')$pagename='index';
 	if(array_key_exists($pagename,$pagesTitles)){
 		$title=$pagesTitles[$pagename];
 		$content=ob_get_clean();

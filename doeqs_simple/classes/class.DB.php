@@ -203,7 +203,7 @@ final class DB{
 		//Check that its main command is indeed SELECT, INSERT, or UPDATE.
 		if(strpos($q,' ')===false)$this->err(45);//no spaces can't be right
 		$maincmd=strtolower(substr($q,0,strpos($q,' ')));
-		if(!in_array($maincmd,['select','insert','update'],true))$this->err(46);//select insert update only.
+		if(!in_array($maincmd,array('select','insert','update'),true))$this->err(46);//select insert update only.
 		
 		//Check that there's no DROP, TRUNCATE, or DELETE. Maybe should check others too.
 		if(stripos($q,'DROP ')!==false||stripos($q,'TRUNCATE ')!==false||stripos($q,'DELETE ')!==false

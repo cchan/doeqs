@@ -226,8 +226,8 @@ function logout(){//--todo--uhhhhhh that's it? shouldn't it be whitelist-style e
 		if(strpos($s,'attempt_')===false)unset($s);
 }
 function saltyStretchyHash($pass,$salt){//WAAAY overdoing it. Messing with any sort of brute force attack.
-	if(!$salt){err('Needs salt');return;}
-	$universalSalt='sGh,mGo%Js(Kv/8o"xxN;}tPXR+*RW27FhgT<59R`AoaRP=)(pos3{<i%Yj#R^DSaei~sx"8#y7|&fx[EiLi$M{,n+V=?)T~gNky{(w|H|=+F\FQmo~-Gojg9<lB@+';
+	global $universalSalt;
+	if(!$salt||!$universalSalt){err('Needs salt');return;}
 	$hash='';
     for($i=0;$i<274;$i++)$hash=hash('whirlpool',$universalSalt.hash('sha512',$i.$pass.$hash.$salt));
 	usleep(mt_rand(0,10000));//Messing up timing attacks :P

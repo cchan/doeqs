@@ -12,10 +12,10 @@ $DEBUG_MODE=false;//True if want lots of debug output. False on real production 
 $SERVER_DOWN=false;//Teapot on every page if it's true. See top of functions.php. :)
 
 /**********************METADATA*********************/
-$DOEQS_URL='http://pointlessbutton.xp3.biz/doeqs/';
+//$DOEQS_URL;
 $VERSION_NUMBER='0.2.2';
-$WEBMASTER_EMAIL='moose54321@gmail.com';
-date_default_timezone_set("America/Toronto");//(No Boston)
+//$WEBMASTER_EMAIL;
+//date_default_timezone_set()
 
 /************************SESSION*********************/
 $SESSION_TIMEOUT_MINUTES=10;
@@ -77,6 +77,7 @@ $adminPagesTitles=array(
 );
 
 /******************CUSTOM LOCAL*******************/
-@include "config.local.php";//If necessary, stuff will be overridden here as local dev settings.
+require 'config.server.php';//Server-specific private - stuff like DB, etc.
+@include 'config.local.php';//local dev settings private, which may override preset server stuff
 
 ?>
